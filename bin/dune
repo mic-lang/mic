@@ -1,0 +1,4 @@
+(executable
+ (public_name mic)
+ (name main)
+ (libraries mic))
