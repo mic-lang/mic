@@ -166,17 +166,17 @@ conditional_expr:
 
 assignment_expr:
 | conditional_expr                        { $1 }
-| unary_expr "=" assignment_expr          { EAssign($1,$3) }
-| unary_expr "*=" assignment_expr         { EAssign($1,EBinary(Mul,$1,$3)) }
-| unary_expr "/=" assignment_expr         { EAssign($1,EBinary(Div,$1,$3)) }
-| unary_expr "%=" assignment_expr         { EAssign($1,EBinary(Mod,$1,$3)) }
-| unary_expr "+=" assignment_expr         { EAssign($1,EBinary(Add,$1,$3)) }
-| unary_expr "-=" assignment_expr         { EAssign($1,EBinary(Sub,$1,$3)) }
-| unary_expr "<<=" assignment_expr        { EAssign($1,EBinary(LShift,$1,$3)) }
-| unary_expr ">>=" assignment_expr        { EAssign($1,EBinary(RShift,$1,$3)) }
-| unary_expr "&=" assignment_expr         { EAssign($1,EBinary(BitAnd,$1,$3)) }
-| unary_expr "^=" assignment_expr         { EAssign($1,EBinary(BitXor,$1,$3)) }
-| unary_expr "|=" assignment_expr         { EAssign($1,EBinary(BitOr,$1,$3)) }
+| unary_expr "=" assignment_expr          { EAssign(None,$1,$3) }
+| unary_expr "*=" assignment_expr         { EAssign(Some Mul,$1,$3) }
+| unary_expr "/=" assignment_expr         { EAssign(Some Div,$1,$3) }
+| unary_expr "%=" assignment_expr         { EAssign(Some Mod,$1,$3) }
+| unary_expr "+=" assignment_expr         { EAssign(Some Add,$1,$3) }
+| unary_expr "-=" assignment_expr         { EAssign(Some Sub,$1,$3) }
+| unary_expr "<<=" assignment_expr        { EAssign(Some LShift,$1,$3) }
+| unary_expr ">>=" assignment_expr        { EAssign(Some RShift,$1,$3) }
+| unary_expr "&=" assignment_expr         { EAssign(Some BitAnd,$1,$3) }
+| unary_expr "^=" assignment_expr         { EAssign(Some BitXor,$1,$3) }
+| unary_expr "|=" assignment_expr         { EAssign(Some BitOr,$1,$3) }
 
 expr:
 | assignment_expr                         { $1 }

@@ -57,7 +57,7 @@ and expr =
   | EConst of value
   | EVar of id
   | EBinary of binary * expr * expr
-  | EAssign of expr * expr
+  | EAssign of binary option * expr * expr
   | EUnary of unary * expr
   | ESizeof of expr ty
   | EPostfix of expr * expr postfix

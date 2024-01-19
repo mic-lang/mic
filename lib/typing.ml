@@ -7,6 +7,6 @@ type expr =
   | ESizeof of expr Syntax.ty * expr Syntax.ty
   | EPostfix of expr Syntax.ty * expr * expr Syntax.postfix
   | ECond of expr Syntax.ty * expr * expr * expr
-  | ECSyntax of expr Syntax.ty * expr
+  | ECast of expr Syntax.ty * expr
   | ECompoundLit of expr Syntax.ty * expr Syntax.init
 [@@deriving show]
