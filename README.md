@@ -1,2 +1,2 @@
-# The Mic Programming Language.
+# The Mic Programming Language
 work in progress
