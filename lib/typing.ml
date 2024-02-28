@@ -66,7 +66,7 @@ let rec type_expr =
   | EUnary ((Plus | Minus | BitNot | LogNot), expr) -> type_expr expr
   | EUnary (Ref, expr) -> TPtr (type_expr expr)
   | EUnary (Deref, expr) ->
-      type_conv (match type_expr expr with TPtr ty | TConstPtr ty | ty -> ty)
+      type_conv (get_base_ty (type_expr expr))
   | EUnary (Sizeof, _) -> TDeclSpec [ TsInt ]
   | ESizeof _ -> TDeclSpec [ TsInt ]
   | EPostfix (expr, PCall _) -> (
