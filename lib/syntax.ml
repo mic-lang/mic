@@ -139,3 +139,6 @@ and ds =
 let rec get_declspec = function
   | TFun (ty, _) | TConstPtr ty | TPtr ty | TArr (ty, _) -> get_declspec ty
   | TDeclSpec l -> l
+
+let get_base_ty = function
+  | TFun (ty, _) | TConstPtr ty | TPtr ty | TArr (ty, _) | ty -> ty
