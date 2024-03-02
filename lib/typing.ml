@@ -2,7 +2,7 @@ type expr =
   | EConst of expr Syntax.ty * Syntax.value
   | EVar of expr Syntax.ty * Syntax.id
   | EBinary of expr Syntax.ty * Syntax.binary * expr * expr
-  | EAssign of expr Syntax.ty * Syntax.binary * expr * expr
+  | EAssign of expr Syntax.ty * Syntax.binary option * expr * expr
   | EUnary of expr Syntax.ty * Syntax.unary * expr
   | ESizeof of expr Syntax.ty * expr Syntax.ty
   | EPostfix of expr Syntax.ty * expr * expr Syntax.postfix
@@ -10,6 +10,19 @@ type expr =
   | ECast of expr Syntax.ty * expr
   | ECompoundLit of expr Syntax.ty * expr Syntax.init
 [@@deriving show]
+
+let get_expr_ty = function
+  | EConst (ty, _)
+  | EVar (ty, _)
+  | EBinary (ty, _, _, _)
+  | EAssign (ty, _, _, _)
+  | EUnary (ty, _, _)
+  | ESizeof (ty, _)
+  | EPostfix (ty, _, _)
+  | ECond (ty, _, _, _)
+  | ECast (ty, _)
+  | ECompoundLit (ty, _) ->
+      ty
 
 let rec type_conv =
   let open Syntax in
@@ -42,54 +55,72 @@ let rec type_conv =
           TDeclSpec [ e ]
         with _ -> failwith "type_conv")
 
-let rec type_expr =
-  let open Syntax in
-  function
-  | EConst v -> (
+let rec type_expr = function
+  | Syntax.EConst v -> (
       match v with
-      | VStr _ -> TPtr (TDeclSpec [ TsChar ])
-      | _ -> TDeclSpec [ TsInt ])
-  | EVar id -> (
+      | VStr _ -> EConst (Syntax.TPtr (TDeclSpec [ TsChar ]), v)
+      | _ -> EConst (Syntax.TPtr (TDeclSpec [ TsInt ]), v))
+  | Syntax.EVar id -> (
       match List.nth (List.rev !Env.program) id with
-      | Decl decl -> type_conv (snd decl)
-      | VarDef (decl, _) -> type_conv (snd decl)
+      | Decl decl | VarDef (decl, _) -> EVar (type_conv (snd decl), id)
       | _ -> failwith "type_expr")
-  | EBinary
-      ( (Add | Sub | Mul | Div | Mod | LShift | RShift | BitAnd | BitXor | BitOr),
+  | Syntax.EBinary
+      ( (( Add | Sub | Mul | Div | Mod | LShift | RShift | BitAnd | BitXor
+         | BitOr ) as bin),
         lhs,
-        _ ) ->
-      type_expr lhs
-  | EBinary ((LogAnd | LogOr | Lt | Le | Gt | Ge | Eq | Ne), _, _) ->
-      TDeclSpec [ TsInt ]
-  | EBinary (Comma, lhs, _) -> type_expr lhs
-  | EAssign (_, lhs, _) -> type_expr lhs
-  | EUnary ((Plus | Minus | BitNot | LogNot), expr) -> type_expr expr
-  | EUnary (Ref, expr) -> TPtr (type_expr expr)
-  | EUnary (Deref, expr) ->
-      type_conv (get_base_ty (type_expr expr))
-  | EUnary (Sizeof, _) -> TDeclSpec [ TsInt ]
-  | ESizeof _ -> TDeclSpec [ TsInt ]
-  | EPostfix (expr, PCall _) -> (
-      match get_base_ty (type_expr expr) with
-      | TFun (ret, _) -> ret
+        rhs ) ->
+      let lhs = type_expr lhs in
+      EBinary (get_expr_ty lhs, bin, lhs, type_expr rhs)
+  | Syntax.EBinary
+      (((LogAnd | LogOr | Lt | Le | Gt | Ge | Eq | Ne) as bin), lhs, rhs) ->
+      EBinary (TDeclSpec [ TsInt ], bin, type_expr lhs, type_expr rhs)
+  | Syntax.EBinary (Comma, lhs, rhs) ->
+      let rhs = type_expr rhs in
+      EBinary (get_expr_ty rhs, Comma, type_expr lhs, rhs)
+  | Syntax.EAssign (bin, lhs, rhs) ->
+      let lhs = type_expr lhs in
+      EAssign (get_expr_ty lhs, bin, lhs, type_expr rhs)
+  | Syntax.EUnary (((Plus | Minus | BitNot | LogNot) as un), expr) ->
+      let expr = type_expr expr in
+      EUnary (get_expr_ty expr, un, expr)
+  | Syntax.EUnary (Ref, expr) ->
+      let expr = type_expr expr in
+      EUnary (TPtr (get_expr_ty expr), Ref, expr)
+  | Syntax.EUnary (Deref, expr) ->
+      let expr = type_expr expr in
+      EUnary (type_conv (Syntax.get_base_ty (get_expr_ty expr)), Deref, expr)
+  | Syntax.EUnary (Sizeof, expr) ->
+      EUnary (TDeclSpec [ TsInt ], Sizeof, type_expr expr)
+  | Syntax.ESizeof ty -> ESizeof (TDeclSpec [ TsInt ], type_conv ty)
+  | Syntax.EPostfix (expr, PCall params) -> (
+      let expr = type_expr expr in
+      let params = List.map type_expr params in
+      match Syntax.get_base_ty (type_conv (get_expr_ty expr)) with
+      | TFun (ret, _) -> EPostfix (ret, expr, PCall params)
       | _ -> failwith "type_expr")
-  | EPostfix (expr, PIdx _) -> get_base_ty (type_expr expr)
-  | EPostfix (expr, PDot name) -> (
-      match type_expr expr with
+  | Syntax.EPostfix (expr, PIdx idx) ->
+      let expr = type_expr expr in
+      EPostfix
+        (Syntax.get_base_ty (get_expr_ty expr), expr, PIdx (type_expr idx))
+  | Syntax.EPostfix (expr, PDot name) -> (
+    let expr = type_expr expr in
+      match get_expr_ty expr with
       | TDeclSpec [ (TsStruct id | TsUnion id) ] -> (
           match List.nth (List.rev !Env.program) id with
           | StructDef (_, mems) | UnionDef (_, mems) ->
-              type_conv (List.assoc name mems)
+              EPostfix(type_conv (List.assoc name mems), expr, PDot name)
           | _ -> failwith "type_expr")
       | _ -> failwith "type_expr")
-  | EPostfix (expr, PArrow name) -> (
-      match get_base_ty (type_expr expr) with
+  | Syntax.EPostfix (expr, PArrow name) -> (
+    let expr = type_expr expr in
+      match Syntax.get_base_ty (get_expr_ty expr) with
       | TDeclSpec [ (TsStruct id | TsUnion id) ] -> (
           match List.nth (List.rev !Env.program) id with
           | StructDef (_, mems) | UnionDef (_, mems) ->
-              type_conv (List.assoc name mems)
+              EPostfix(type_conv (List.assoc name mems), expr, PArrow name)
           | _ -> failwith "type_expr")
       | _ -> failwith "type_expr")
-  | EPostfix (expr, (PInc | PDec)) -> type_expr expr
-  | ECond (_, lhs, _) -> type_expr lhs
-  | ECast (ty, _) | ECompoundLit (ty, _) -> type_conv ty
+  | Syntax.EPostfix (expr, (PInc | PDec)) -> type_expr expr
+  | Syntax.ECond (_, lhs, _) -> type_expr lhs
+  | Syntax.ECast (ty, expr) -> ECast(type_conv ty, type_expr expr)
+  | Syntax.ECompoundLit (ty, _) -> ECompoundLit(type_conv ty, IVect [])
