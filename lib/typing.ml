@@ -11,8 +11,11 @@ type expr =
   | ECompoundLit of expr Syntax.ty * expr Syntax.init
 [@@deriving show]
 
+and ty = expr Syntax.ty [@@deriving show]
 and typed_program = expr Syntax.item list [@@deriving show]
 and typed_programi = (Syntax.id * expr Syntax.item) list [@@deriving show]
+
+let program : typed_program ref = ref []
 
 let get_expr_ty = function
   | EConst (ty, _)
@@ -33,9 +36,9 @@ let rec type_conv =
   | TFun (ty, decl) ->
       TPtr
         (TFun (type_conv ty, List.map (fun (n, ty) -> (n, type_conv ty)) decl))
-  | TArr (ty, _) -> TPtr (type_conv ty)
-  | TConstPtr ty -> TConstPtr (type_conv ty)
-  | TPtr ty -> TPtr (type_conv ty)
+  | TArr (ty, _) -> TPtr (Syntax.get_base_ty (type_conv ty))
+  | TConstPtr ty -> TConstPtr (Syntax.get_base_ty (type_conv ty))
+  | TPtr ty -> TPtr (Syntax.get_base_ty (type_conv ty))
   | TDeclSpec l -> (
       if
         List.exists
@@ -65,8 +68,9 @@ let rec type_expr = function
       | _ -> EConst (Syntax.TPtr (TDeclSpec [ TsInt ]), v))
   | Syntax.EVar id -> (
       match List.nth (List.rev !Env.program) id with
-      | Decl decl | VarDef (decl, _) -> EVar (type_conv (snd decl), id)
-      | _ -> failwith "type_expr")
+      | Decl decl | VarDef (decl, _) | FunctionDef (decl, _) ->
+          EVar (type_conv (snd decl), id)
+      | item -> failwith ("type_expr" ^ Syntax.show_item_ item))
   | Syntax.EBinary
       ( (( Add | Sub | Mul | Div | Mod | LShift | RShift | BitAnd | BitXor
          | BitOr ) as bin),
@@ -100,7 +104,10 @@ let rec type_expr = function
       let params = List.map type_expr params in
       match Syntax.get_base_ty (type_conv (get_expr_ty expr)) with
       | TFun (ret, _) -> EPostfix (ret, expr, PCall params)
-      | _ -> failwith "type_expr")
+      | _ ->
+          print_endline
+            (show_ty (Syntax.get_base_ty (type_conv (get_expr_ty expr))));
+          failwith "type_expr")
   | Syntax.EPostfix (expr, PIdx idx) ->
       let expr = type_expr expr in
       EPostfix
@@ -112,8 +119,8 @@ let rec type_expr = function
           match List.nth (List.rev !Env.program) id with
           | StructDef (_, mems) | UnionDef (_, mems) ->
               EPostfix (type_conv (List.assoc name mems), expr, PDot name)
-          | _ -> failwith "type_expr")
-      | _ -> failwith "type_expr")
+          | _ -> failwith "type_expr: dot")
+      | _ -> failwith "type_expr: dot")
   | Syntax.EPostfix (expr, PArrow name) -> (
       let expr = type_expr expr in
       match Syntax.get_base_ty (get_expr_ty expr) with
@@ -121,12 +128,13 @@ let rec type_expr = function
           match List.nth (List.rev !Env.program) id with
           | StructDef (_, mems) | UnionDef (_, mems) ->
               EPostfix (type_conv (List.assoc name mems), expr, PArrow name)
-          | _ -> failwith "type_expr")
-      | _ -> failwith "type_expr")
+          | _ -> failwith "type_expr: arrow")
+      | _ -> failwith "type_expr: arrow")
   | Syntax.EPostfix (expr, (PInc | PDec)) -> type_expr expr
   | Syntax.ECond (_, lhs, _) -> type_expr lhs
   | Syntax.ECast (ty, expr) -> ECast (type_conv ty, type_expr expr)
-  | Syntax.ECompoundLit (ty, _) -> ECompoundLit (type_conv ty, IVect [])
+  | Syntax.ECompoundLit (ty, init) ->
+      ECompoundLit (type_conv ty, type_init (type_conv ty) init)
 
 and type_init ty init =
   match init with
@@ -152,12 +160,12 @@ and type_init ty init =
             match (mems, l) with
             | _, [] -> []
             | [], _ -> failwith "type_init: excess elements"
-            | (_, ty) :: _, (design, init) :: xs ->
-                let ty, design =
+            | (_, memty) :: _, (design, init) :: xs ->
+                let memty, design =
                   match design with
                   | Syntax.Dnone ->
                       loc := !loc + 1;
-                      (type_conv ty, Syntax.Dnone)
+                      (type_conv memty, Syntax.Dnone)
                   | _ -> type_design (type_conv ty) design loc
                 in
                 let rec remain_mems mems x =
@@ -166,7 +174,7 @@ and type_init ty init =
                   | [], _ -> failwith "type_init error: excess elements"
                   | _ :: mems, x -> remain_mems mems (x - 1)
                 in
-                (design, type_init ty init)
+                (design, type_init memty init)
                 :: aux loc (remain_mems mems !loc) xs
           in
           IVect (aux loc mems l)
@@ -175,7 +183,7 @@ and type_init ty init =
 and type_design ty design loc =
   match (ty, design) with
   | Syntax.TArr (ty, _), DIdx (expr, design) ->
-      let ty, design = type_design (type_conv ty) design loc in
+      let ty, design = type_design ty design loc in
       (ty, DIdx (type_expr expr, design))
   | Syntax.TDeclSpec [ TsStruct id ], DField (name, design) ->
       let mems =
@@ -190,26 +198,7 @@ and type_design ty design loc =
       let ty, design = type_design ty design (ref 0) in
       (ty, DField (name, design))
   | ty, Dnone -> (type_conv ty, Dnone)
-  | _ -> failwith "type_design"
-
-(*
-and type_design ty design loc =
-  match (ty, design) with
-  | Syntax.TArr (ty, _), DIdx (_, design) -> (fst (type_design ty design loc), 0)
-  | Syntax.TDeclSpec [ TsStruct id ], DField (name, design) ->
-      let mems =
-        match List.nth (List.rev !Env.program) id with
-        | StructDef (_, mems) -> mems
-        | _ -> failwith "type_init"
-      in
-      let ty = try List.assoc name mems with _ -> failwith "type_design" in
-      let l = List.init (List.length mems) (fun x -> x) in
-      let l = List.map2 (fun (name, _) loc -> (name, loc)) mems l in
-      (fst (type_design (type_conv ty) design loc), List.assoc name l)
-  | _, Dnone -> (ty, loc)
-  | _ -> failwith "type_design"
-
-*)
+  | _ -> failwith ("type_design" ^ Syntax.show_ty_ ty ^ Syntax.show_desig design)
 
 let rec type_stmt =
   let open Syntax in
@@ -235,3 +224,24 @@ let rec type_stmt =
   | SCase (expr, stmts) -> SCase (type_expr expr, List.map type_stmt stmts)
   | SDefault stmts -> SDefault (List.map type_stmt stmts)
   | SExpr expr -> SExpr (Option.map type_expr expr)
+
+let rec type_program =
+  let open Syntax in
+  function
+  | [] -> []
+  | Decl (n, ty) :: xs -> Decl (n, type_conv ty) :: type_program xs
+  | StructDecl n :: xs -> StructDecl n :: type_program xs
+  | UnionDecl n :: xs -> UnionDecl n :: type_program xs
+  | EnumDecl n :: xs -> EnumDecl n :: type_program xs
+  | VarDef ((n, ty), init) :: xs ->
+      VarDef ((n, type_conv ty), type_init (type_conv ty) init)
+      :: type_program xs
+  | StructDef (n, l) :: xs ->
+      StructDef (n, List.map (fun (n, ty) -> (n, type_conv ty)) l)
+      :: type_program xs
+  | UnionDef (n, l) :: xs ->
+      UnionDef (n, List.map (fun (n, ty) -> (n, type_conv ty)) l)
+      :: type_program xs
+  | EnumDef (n, l) :: xs -> EnumDef (n, l) :: type_program xs
+  | FunctionDef ((n, ty), stmt) :: xs ->
+      FunctionDef ((n, type_conv ty), type_stmt stmt) :: type_program xs

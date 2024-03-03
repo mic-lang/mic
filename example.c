@@ -1,9 +1,9 @@
 static struct X func(struct Y a) {
-    struct Y {unsigned x;};
+    struct Y {int x;};
     return (struct X){0};
 }
 struct X;
-struct X{unsigned x;};
+struct X{void x;};
 struct X;
 
 extern int printf(const char *, ...);
@@ -33,7 +33,7 @@ return 0;
 char c = '\n';
 unsigned i = 5;
 struct X x= {.x=0,};
-int *var[4+5] = "abc";
+char *var[4+5] = "abc";
 int* const x;
 
 typedef struct X Z;
