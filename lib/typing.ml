@@ -128,6 +128,89 @@ let rec type_expr = function
   | Syntax.ECast (ty, expr) -> ECast (type_conv ty, type_expr expr)
   | Syntax.ECompoundLit (ty, _) -> ECompoundLit (type_conv ty, IVect [])
 
+and type_init ty init =
+  match init with
+  | Syntax.IScal expr -> Syntax.IScal (type_expr expr)
+  | Syntax.IVect l -> (
+      let loc = ref 0 in
+      match ty with
+      | Syntax.TArr (ty, _) ->
+          let rec aux = function
+            | [] -> []
+            | (design, init) :: xs ->
+                let ty, design = type_design ty design loc in
+                (design, type_init ty init) :: aux xs
+          in
+          IVect (aux l)
+      | Syntax.TDeclSpec [ TsStruct id ] ->
+          let mems =
+            match List.nth (List.rev !Env.program) id with
+            | StructDef (_, mems) -> mems
+            | _ -> failwith "type_init"
+          in
+          let rec aux loc mems l =
+            match (mems, l) with
+            | _, [] -> []
+            | [], _ -> failwith "type_init: excess elements"
+            | (_, ty) :: _, (design, init) :: xs ->
+                let ty, design =
+                  match design with
+                  | Syntax.Dnone ->
+                      loc := !loc + 1;
+                      (type_conv ty, Syntax.Dnone)
+                  | _ -> type_design (type_conv ty) design loc
+                in
+                let rec remain_mems mems x =
+                  match (mems, x) with
+                  | mems, 0 -> mems
+                  | [], _ -> failwith "type_init error: excess elements"
+                  | _ :: mems, x -> remain_mems mems (x - 1)
+                in
+                (design, type_init ty init)
+                :: aux loc (remain_mems mems !loc) xs
+          in
+          IVect (aux loc mems l)
+      | _ -> failwith "type_init: invalid type or initializer")
+
+and type_design ty design loc =
+  match (ty, design) with
+  | Syntax.TArr (ty, _), DIdx (expr, design) ->
+      let ty, design = type_design (type_conv ty) design loc in
+      (ty, DIdx (type_expr expr, design))
+  | Syntax.TDeclSpec [ TsStruct id ], DField (name, design) ->
+      let mems =
+        match List.nth (List.rev !Env.program) id with
+        | StructDef (_, mems) -> mems
+        | _ -> failwith "type_init"
+      in
+      let ty = try List.assoc name mems with _ -> failwith "type_design" in
+      let l = List.init (List.length mems) (fun x -> x) in
+      let l = List.map2 (fun (name, _) loc -> (name, loc)) mems l in
+      loc := List.assoc name l;
+      let ty, design = type_design ty design (ref 0) in
+      (ty, DField (name, design))
+  | ty, Dnone -> (type_conv ty, Dnone)
+  | _ -> failwith "type_design"
+
+(*
+and type_design ty design loc =
+  match (ty, design) with
+  | Syntax.TArr (ty, _), DIdx (_, design) -> (fst (type_design ty design loc), 0)
+  | Syntax.TDeclSpec [ TsStruct id ], DField (name, design) ->
+      let mems =
+        match List.nth (List.rev !Env.program) id with
+        | StructDef (_, mems) -> mems
+        | _ -> failwith "type_init"
+      in
+      let ty = try List.assoc name mems with _ -> failwith "type_design" in
+      let l = List.init (List.length mems) (fun x -> x) in
+      let l = List.map2 (fun (name, _) loc -> (name, loc)) mems l in
+      (fst (type_design (type_conv ty) design loc), List.assoc name l)
+  | _, Dnone -> (ty, loc)
+  | _ -> failwith "type_design"
+
+*)
+
 let rec type_stmt =
   let open Syntax in
   function

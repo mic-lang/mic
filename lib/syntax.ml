@@ -75,13 +75,13 @@ and 'expr postfix =
   | PDec
 [@@deriving show]
 
-and 'expr init = IScal of 'expr | IVect of ('expr desig * 'expr init) list
+and 'expr init = IScal of 'expr | IVect of ('expr design * 'expr init) list
 [@@deriving show]
 
-and 'expr desig =
+and 'expr design =
   | Dnone
-  | DIdx of 'expr * 'expr desig
-  | DField of string * 'expr desig
+  | DIdx of 'expr * 'expr design
+  | DField of string * 'expr design
 [@@deriving show]
 
 and 'expr stmt =
