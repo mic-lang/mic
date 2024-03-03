@@ -11,6 +11,9 @@ type expr =
   | ECompoundLit of expr Syntax.ty * expr Syntax.init
 [@@deriving show]
 
+and typed_program = expr Syntax.item list [@@deriving show]
+and typed_programi = (Syntax.id * expr Syntax.item) list [@@deriving show]
+
 let get_expr_ty = function
   | EConst (ty, _)
   | EVar (ty, _)
@@ -103,24 +106,49 @@ let rec type_expr = function
       EPostfix
         (Syntax.get_base_ty (get_expr_ty expr), expr, PIdx (type_expr idx))
   | Syntax.EPostfix (expr, PDot name) -> (
-    let expr = type_expr expr in
+      let expr = type_expr expr in
       match get_expr_ty expr with
       | TDeclSpec [ (TsStruct id | TsUnion id) ] -> (
           match List.nth (List.rev !Env.program) id with
           | StructDef (_, mems) | UnionDef (_, mems) ->
-              EPostfix(type_conv (List.assoc name mems), expr, PDot name)
+              EPostfix (type_conv (List.assoc name mems), expr, PDot name)
           | _ -> failwith "type_expr")
       | _ -> failwith "type_expr")
   | Syntax.EPostfix (expr, PArrow name) -> (
-    let expr = type_expr expr in
+      let expr = type_expr expr in
       match Syntax.get_base_ty (get_expr_ty expr) with
       | TDeclSpec [ (TsStruct id | TsUnion id) ] -> (
           match List.nth (List.rev !Env.program) id with
           | StructDef (_, mems) | UnionDef (_, mems) ->
-              EPostfix(type_conv (List.assoc name mems), expr, PArrow name)
+              EPostfix (type_conv (List.assoc name mems), expr, PArrow name)
           | _ -> failwith "type_expr")
       | _ -> failwith "type_expr")
   | Syntax.EPostfix (expr, (PInc | PDec)) -> type_expr expr
   | Syntax.ECond (_, lhs, _) -> type_expr lhs
-  | Syntax.ECast (ty, expr) -> ECast(type_conv ty, type_expr expr)
-  | Syntax.ECompoundLit (ty, _) -> ECompoundLit(type_conv ty, IVect [])
+  | Syntax.ECast (ty, expr) -> ECast (type_conv ty, type_expr expr)
+  | Syntax.ECompoundLit (ty, _) -> ECompoundLit (type_conv ty, IVect [])
+
+let rec type_stmt =
+  let open Syntax in
+  function
+  | SDef l -> SDef l
+  | SStmts stmts -> SStmts (List.map type_stmt stmts)
+  | SWhile (expr, stmt) -> SWhile (type_expr expr, type_stmt stmt)
+  | SDoWhile (stmt, expr) -> SDoWhile (type_stmt stmt, type_expr expr)
+  | SFor (stmt1, expr1, expr2, stmt2) ->
+      SFor
+        ( type_stmt stmt1,
+          Option.map type_expr expr1,
+          Option.map type_expr expr2,
+          type_stmt stmt2 )
+  | SIfElse (expr, stmt1, stmt2) ->
+      SIfElse (type_expr expr, type_stmt stmt1, type_stmt stmt2)
+  | SReturn expr -> SReturn (Option.map type_expr expr)
+  | SLabel (name, stmt) -> SLabel (name, type_stmt stmt)
+  | SGoto name -> SGoto name
+  | SContinue -> SContinue
+  | SBreak -> SBreak
+  | SSwitch (expr, stmts) -> SSwitch (type_expr expr, List.map type_stmt stmts)
+  | SCase (expr, stmts) -> SCase (type_expr expr, List.map type_stmt stmts)
+  | SDefault stmts -> SDefault (List.map type_stmt stmts)
+  | SExpr expr -> SExpr (Option.map type_expr expr)
