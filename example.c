@@ -33,7 +33,7 @@ return 0;
 char c = '\n';
 unsigned i = 5;
 struct X x= {.x=0,};
-char *var[4+5] = "abc";
+char* var[4+5] = "abc";
 int* const x;
 
 typedef struct X Z;

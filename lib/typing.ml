@@ -36,9 +36,12 @@ let rec type_conv =
   | TFun (ty, decl) ->
       TPtr
         (TFun (type_conv ty, List.map (fun (n, ty) -> (n, type_conv ty)) decl))
-  | TArr (ty, _) -> TPtr (Syntax.get_base_ty (type_conv ty))
-  | TConstPtr ty -> TConstPtr (Syntax.get_base_ty (type_conv ty))
-  | TPtr ty -> TPtr (Syntax.get_base_ty (type_conv ty))
+  | TArr (ty, _) -> TPtr (type_conv ty)
+  | TConstPtr ty -> TConstPtr (type_conv ty)
+  | TPtr (TFun (ty, decl)) ->
+      TPtr
+        (TFun (type_conv ty, List.map (fun (n, ty) -> (n, type_conv ty)) decl))
+  | TPtr ty -> TPtr (type_conv ty)
   | TDeclSpec l -> (
       if
         List.exists
@@ -105,8 +108,7 @@ let rec type_expr = function
       match Syntax.get_base_ty (type_conv (get_expr_ty expr)) with
       | TFun (ret, _) -> EPostfix (ret, expr, PCall params)
       | _ ->
-          print_endline
-            (show_ty (Syntax.get_base_ty (type_conv (get_expr_ty expr))));
+          print_endline (show_ty (type_conv (get_expr_ty expr)));
           failwith "type_expr")
   | Syntax.EPostfix (expr, PIdx idx) ->
       let expr = type_expr expr in
