@@ -1,4 +1,4 @@
-static struct X func(struct Y a) {
+static struct X func(struct Y a, int b) {
     struct Y {int x;};
     return (struct X){0};
 }
@@ -39,3 +39,8 @@ int* const x;
 typedef struct X Z;
 Z;
 void(*func)(int a);
+
+char *const ptr [4] ;
+char (*const ptr)[4];
+void (*signal (int sig, void(*func)(int a)))(int b);
+void (*(*p)[10])(int a, int b);

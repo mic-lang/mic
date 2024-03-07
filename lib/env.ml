@@ -80,21 +80,21 @@ let make_structdef name decl =
   match lookup_structdecl name (get_scope ()) with
   | Some id ->
       update_program id (StructDef (name, decl));
-      TsStruct id
+      TsStructDef id
   | None -> (
       match lookup_structdef name (get_scope ()) with
       | Some _ -> failwith "redifinition of struct"
-      | None -> TsStruct (push_def (StructDef (name, decl))))
+      | None -> TsStructDef (push_def (StructDef (name, decl))))
 
 let make_uniondef name decl =
   match lookup_uniondecl name (get_scope ()) with
   | Some id ->
       update_program id (UnionDef (name, decl));
-      TsStruct id
+      TsUnionDef id
   | None -> (
       match lookup_uniondef name (get_scope ()) with
       | Some _ -> failwith "redifinition of struct"
-      | None -> TsUnion (push_def (UnionDef (name, decl))))
+      | None -> TsUnionDef (push_def (UnionDef (name, decl))))
 
 let is_decl name = function Decl (n, _) when n = name -> true | _ -> false
 let lookup_decl name l = find_item (is_decl name) l

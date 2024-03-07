@@ -127,6 +127,8 @@ and ds =
   | TsVoid
   | TsStruct of int
   | TsUnion of int
+  | TsStructDef of int
+  | TsUnionDef of int
   | TsTypedef of int
   | ScsTypedef
   | ScsExtern

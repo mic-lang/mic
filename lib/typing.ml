@@ -57,7 +57,9 @@ let rec type_conv =
           let e =
             List.find
               (function
-                | TsVoid | TsStruct _ | TsUnion _ | TsTypedef _ -> true
+                | TsVoid | TsStruct _ | TsUnion _ | TsStructDef _ | TsUnionDef _
+                | TsTypedef _ ->
+                    true
                 | _ -> false)
               l
           in
