@@ -44,3 +44,4 @@ char *const ptr [4] ;
 char (*const ptr)[4];
 void (*signal (int sig, void(*func)(int a)))(int b);
 void (*(*p)[10])(int a, int b);
+struct X x = (struct X){.x=0,};
