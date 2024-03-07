@@ -20,7 +20,15 @@ let () =
          (Mic.Syntax.TConstPtr (Mic.Syntax.TDeclSpec [ Mic.Syntax.TsInt ])));
     print_endline
       (Mic.Cgen.gen_ty "func"
-         (Mic.Syntax.TPtr
+         (Mic.Syntax.TConstPtr
             (Mic.Syntax.TFun
                ( Mic.Syntax.TDeclSpec [ Mic.Syntax.TsVoid ],
-                 [ ("a", Mic.Syntax.TDeclSpec [ Mic.Syntax.TsInt ]) ] ))))
+                 [ ("a", Mic.Syntax.TDeclSpec [ Mic.Syntax.TsInt ]) ] ))));
+    print_endline
+      (Mic.Cgen.gen_ty "var"
+         (Mic.Syntax.TArr
+            ( Mic.Syntax.TPtr (Mic.Syntax.TDeclSpec [ Mic.Syntax.TsChar ]),
+              Mic.Syntax.EBinary
+                ( Mic.Syntax.Add,
+                  Mic.Syntax.EConst (Mic.Syntax.VInt "4"),
+                  Mic.Syntax.EConst (Mic.Syntax.VInt "5") ) )))
