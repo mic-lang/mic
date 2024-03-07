@@ -14,4 +14,13 @@ let () =
       (Mic.Typing.show_typed_programi
          (List.mapi
             (fun i x -> (i, x))
-            (Mic.Typing.type_program (List.rev !Mic.Env.program))))
+            (Mic.Typing.type_program (List.rev !Mic.Env.program))));
+    print_endline
+      (Mic.Cgen.gen_ty "x"
+         (Mic.Syntax.TConstPtr (Mic.Syntax.TDeclSpec [ Mic.Syntax.TsInt ])));
+    print_endline
+      (Mic.Cgen.gen_ty "func"
+         (Mic.Syntax.TPtr
+            (Mic.Syntax.TFun
+               ( Mic.Syntax.TDeclSpec [ Mic.Syntax.TsVoid ],
+                 [ ("a", Mic.Syntax.TDeclSpec [ Mic.Syntax.TsInt ]) ] ))))

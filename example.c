@@ -38,3 +38,4 @@ int* const x;
 
 typedef struct X Z;
 Z;
+void(*func)(int a);
