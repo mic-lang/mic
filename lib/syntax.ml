@@ -37,10 +37,12 @@ type unary = Plus | Minus | BitNot | LogNot | Ref | Deref | Sizeof
 
 type 'expr item =
   | Decl of 'expr decl
+  | GDecl of 'expr decl
   | StructDecl of string
   | UnionDecl of string
   | EnumDecl of string
   | VarDef of 'expr decl * 'expr init
+  | GVarDef of 'expr decl * 'expr init
   | StructDef of string * 'expr decl list
   | UnionDef of string * 'expr decl list
   | EnumDef of string * (string * int) list

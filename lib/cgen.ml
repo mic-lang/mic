@@ -1,5 +1,4 @@
 open Syntax
-(* open Typing *)
 
 let rec gen_declspec = function
   | TsInt -> "int"
@@ -16,6 +15,7 @@ let rec gen_declspec = function
       ^
       match List.nth (List.rev !Env.program) id with
       | StructDecl name -> name
+      | StructDef (name, _) -> name
       | _ -> failwith "gen_declspec")
   | TsStructDef id -> (
       "struct "
@@ -28,6 +28,7 @@ let rec gen_declspec = function
       ^
       match List.nth (List.rev !Env.program) id with
       | UnionDecl name -> name
+      | UnionDef (name, _) -> name
       | _ -> failwith "gen_declspec")
   | TsUnionDef id -> (
       "union "
@@ -37,7 +38,7 @@ let rec gen_declspec = function
       | _ -> failwith "gen_declspec")
   | TsTypedef id -> (
       match List.nth (List.rev !Env.program) id with
-      | Decl (name, _) -> name
+      | Decl (name, _) | GDecl (name, _) -> name
       | _ -> failwith "gen_declspec")
   | ScsTypedef -> "typedef"
   | ScsExtern -> "extern"
@@ -59,7 +60,7 @@ and gen_decl str = function
   | TPtr ty -> gen_decl ("*" ^ str) ty
   | TArr (ty, expr) -> gen_decl (str ^ "[" ^ gen_expr expr ^ "]") ty
   | TFun (ty, l) -> gen_decl (str ^ "(" ^ gen_params l ^ ")") ty
-  | TDeclSpec l -> gen_declspecs l ^ " " ^ str
+  | TDeclSpec l -> gen_declspecs l ^ if str = "" then "" else " " ^ str
 
 and gen_params l =
   String.concat ", " (List.map (fun (name, ty) -> gen_decl name ty) l)
@@ -103,7 +104,11 @@ and gen_expr = function
   | EConst v -> gen_value v
   | EVar id -> (
       match List.nth (List.rev !Env.program) id with
-      | Decl (name, _) | VarDef ((name, _), _) | FunctionDef ((name, _), _) ->
+      | Decl (name, _)
+      | GDecl (name, _)
+      | VarDef ((name, _), _)
+      | GVarDef ((name, _), _)
+      | FunctionDef ((name, _), _) ->
           name
       | _ -> failwith "gen_expr")
   | EBinary (bin, lhs, rhs) ->
@@ -145,3 +150,76 @@ and gen_design = function
   | Dnone -> ""
   | DIdx (expr, design) -> "[" ^ gen_expr expr ^ "]" ^ gen_design design
   | DField (mem, design) -> "." ^ mem ^ gen_design design
+
+let rec gen_stmt = function
+  | SDef l ->
+      String.concat ""
+        (List.map (fun id -> gen_item (List.nth (List.rev !Env.program) id)) l)
+  | SStmts [] -> ""
+  | SStmts l ->
+      "{\n"
+      ^ String.concat "" (List.map (fun stmt -> gen_stmt stmt ^ "\n") l)
+      ^ "}"
+  | SWhile (expr, stmt) ->
+      "while (" ^ gen_expr expr ^ ")\n" ^ gen_stmt stmt ^ "\n"
+  | SDoWhile (stmt, expr) ->
+      "do" ^ gen_stmt stmt ^ "\n" ^ "while (" ^ gen_expr expr ^ ")"
+  | SFor (stmt1, expr1, expr2, stmt2) ->
+      "for (" ^ gen_stmt stmt1 ^ " "
+      ^ (match expr1 with Some expr -> gen_expr expr | None -> "")
+      ^ "; "
+      ^ (match expr2 with Some expr -> gen_expr expr | None -> "")
+      ^ ")\n" ^ gen_stmt stmt2 ^ "\n"
+  | SIfElse (expr, stmt1, stmt2) ->
+      "if (" ^ gen_expr expr ^ ")\n" ^ gen_stmt stmt1 ^ "\n"
+      ^
+      let str = gen_stmt stmt2 ^ "\n" in
+      if str = "\n" then "" else "else\n" ^ str
+  | SReturn None -> "return;"
+  | SReturn (Some expr) -> "return " ^ gen_expr expr ^ ";"
+  | SLabel (label, stmt) -> label ^ ":\n" ^ gen_stmt stmt
+  | SGoto label -> "goto " ^ label ^ ";"
+  | SContinue -> "continue;"
+  | SBreak -> "break;"
+  | SSwitch (expr, l) ->
+      "switch (" ^ gen_expr expr ^ ")\n" ^ "{\n"
+      ^ String.concat "" (List.map (fun stmt -> gen_stmt stmt ^ "\n") l)
+      ^ "}" ^ "\n"
+  | SCase (expr, l) ->
+      "case " ^ gen_expr expr ^ ":\n"
+      ^ String.concat "" (List.map (fun stmt -> gen_stmt stmt ^ "\n") l)
+  | SDefault l ->
+      "default:\n"
+      ^ String.concat "" (List.map (fun stmt -> gen_stmt stmt ^ "\n") l)
+  | SExpr None -> ";"
+  | SExpr (Some expr) -> gen_expr expr ^ ";"
+
+and gen_item = function
+  | Decl (name, ty) -> gen_decl name ty ^ ";"
+  | GDecl _ -> ""
+  | StructDecl _ -> ""
+  | UnionDecl _ -> ""
+  | EnumDecl _ -> ""
+  | VarDef ((name, ty), init) -> gen_decl name ty ^ " = " ^ gen_init init ^ ";"
+  | GVarDef _ -> ""
+  | StructDef _ -> ""
+  | UnionDef _ -> ""
+  | EnumDef _ -> ""
+  | FunctionDef _ -> ""
+
+and gen_item_global = function
+  | Decl _ -> ""
+  | GDecl (name, ty) -> gen_decl name ty ^ ";" ^ "\n"
+  | StructDecl _ -> ""
+  | UnionDecl _ -> ""
+  | EnumDecl _ -> ""
+  | VarDef _ -> ""
+  | GVarDef ((name, ty), init) ->
+      gen_decl name ty ^ " = " ^ gen_init init ^ ";" ^ "\n"
+  | StructDef _ -> ""
+  | UnionDef _ -> ""
+  | EnumDef _ -> ""
+  | FunctionDef ((name, ty), stmt) ->
+      "\n" ^ gen_decl name ty ^ " " ^ gen_stmt stmt ^ "\n"
+
+let gen_program program = String.concat "" (List.map gen_item_global program)

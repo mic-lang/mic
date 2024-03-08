@@ -29,6 +29,12 @@ let make_decls_with_init ty init_decl_list =
     | (d,None) -> push_def (Decl (make_decl ty d))
   ) init_decl_list
 
+let make_gdecls_with_init ty init_decl_list =
+  List.map (function 
+    | (d,Some init) -> push_def (GVarDef(make_decl ty d,init))
+    | (d,None) -> push_def (GDecl (make_decl ty d))
+  ) init_decl_list
+
 let conv_ident = function
   | Some s -> s 
   | None -> ""
@@ -187,8 +193,12 @@ constant_expr:
 
 
 decl:
-| decl_specs                          { [] }
+| decl_specs                          { [push_def (Decl (make_decl $1 (DeclIdent "")))] }
 | decl_specs enter_scope init_declarator_list leave_scope    { make_decls_with_init $1 $3 }
+
+gdecl:
+| decl_specs                          { [push_def (GDecl (make_decl $1 (DeclIdent "")))] }
+| decl_specs enter_scope init_declarator_list leave_scope    { make_gdecls_with_init $1 $3 }
 
 decl_spec:
 | storage_class_spec                      { [$1] }
@@ -416,7 +426,7 @@ jump_stmt:
 
 external_decl:
 | function_def                            { [push_def $1] }
-| decl ";"                                { $1 }
+| gdecl ";"                                { $1 }
 | ";"                                     { [] }
 
 function_def:

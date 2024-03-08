@@ -96,11 +96,14 @@ let make_uniondef name decl =
       | Some _ -> failwith "redifinition of struct"
       | None -> TsUnionDef (push_def (UnionDef (name, decl))))
 
-let is_decl name = function Decl (n, _) when n = name -> true | _ -> false
+let is_decl name = function
+  | (Decl (n, _) | GDecl (n, _)) when n = name -> true
+  | _ -> false
+
 let lookup_decl name l = find_item (is_decl name) l
 
 let is_vardef name = function
-  | VarDef ((n, _), _) when n = name -> true
+  | (VarDef ((n, _), _) | GVarDef ((n, _), _)) when n = name -> true
   | _ -> false
 
 let lookup_vardef name l = find_item (is_vardef name) l
@@ -116,7 +119,7 @@ let lookup_typedef name =
   | Some id -> (
       print_endline name;
       match List.nth (List.rev !program) id with
-      | Decl (_, ty) ->
+      | Decl (_, ty) | GDecl (_, ty) ->
           let dsl = get_declspec ty in
           if List.mem ScsTypedef dsl then (
             print_endline name;

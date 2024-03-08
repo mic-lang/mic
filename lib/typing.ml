@@ -234,11 +234,15 @@ let rec type_program =
   function
   | [] -> []
   | Decl (n, ty) :: xs -> Decl (n, type_conv ty) :: type_program xs
+  | GDecl (n, ty) :: xs -> GDecl (n, type_conv ty) :: type_program xs
   | StructDecl n :: xs -> StructDecl n :: type_program xs
   | UnionDecl n :: xs -> UnionDecl n :: type_program xs
   | EnumDecl n :: xs -> EnumDecl n :: type_program xs
   | VarDef ((n, ty), init) :: xs ->
       VarDef ((n, type_conv ty), type_init (type_conv ty) init)
+      :: type_program xs
+  | GVarDef ((n, ty), init) :: xs ->
+      GVarDef ((n, type_conv ty), type_init (type_conv ty) init)
       :: type_program xs
   | StructDef (n, l) :: xs ->
       StructDef (n, List.map (fun (n, ty) -> (n, type_conv ty)) l)
