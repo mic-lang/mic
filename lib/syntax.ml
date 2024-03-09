@@ -42,7 +42,7 @@ type unary = Plus | Minus | BitNot | LogNot | Ref | Deref | Sizeof
 type 'expr item =
   | Decl of 'expr decl
   | GDecl of 'expr decl
-  | LDecl of string list  * string list * 'expr decl
+  | LDecl of string list * string list * 'expr decl
   | StructDecl of string
   | UnionDecl of string
   | EnumDecl of string
