@@ -42,6 +42,7 @@ type unary = Plus | Minus | BitNot | LogNot | Ref | Deref | Sizeof
 type 'expr item =
   | Decl of 'expr decl
   | GDecl of 'expr decl
+  | LDecl of string list  * string list * 'expr decl
   | StructDecl of string
   | UnionDecl of string
   | EnumDecl of string
@@ -51,6 +52,7 @@ type 'expr item =
   | UnionDef of string * 'expr decl list
   | EnumDef of string * (string * int) list
   | FunctionDef of 'expr decl * 'expr stmt
+  | LFunctionDef of string list * string list * 'expr decl * 'expr stmt
 [@@deriving show]
 
 and id = int [@@deriving show]

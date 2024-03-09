@@ -39,6 +39,18 @@ let conv_ident = function
   | Some s -> s 
   | None -> ""
 
+type lparams =
+  | Depth of string
+  | Kind of string
+
+let filter_depth = function
+| Depth str -> Some str
+| _ -> None
+
+let filter_kind = function
+| Kind str -> Some str
+| _ -> None
+
 %}
 %token LPAREN "(" RPAREN ")" LBRACKET "[" RBRACKET "]" LBRACE "{" RBRACE "}" DOT "." COMMA ","
 %token AND "&" STAR "*" PLUS "+" MINUS "-" NOT "~" BANG "!" DIV "/" MOD "%" LT "<" GT ">" HAT "^" OR "|" 
@@ -194,11 +206,11 @@ constant_expr:
 | conditional_expr                        { $1 }
 
 lifetime_declaration:
-| LIFETIME LT separated_list(",", lifetime_parameter) GT                   {  }
+| LIFETIME LT separated_list(",", lifetime_parameter) GT                   { $3 }
 
 lifetime_parameter:
-| DEPTH ident                             { }
-| KIND ident                              {}
+| DEPTH ident                             { Depth $2 }
+| KIND ident                              { Kind $2 }
 
 decl:
 | decl_specs                          { [push_def (Decl (make_decl $1 (DeclIdent "")))] }
@@ -207,8 +219,7 @@ decl:
 gdecl:
 | decl_specs                          { [push_def (GDecl (make_decl $1 (DeclIdent "")))] }
 | decl_specs enter_scope init_declarator_list leave_scope    { make_gdecls_with_init $1 $3 }
-| lifetime_declaration decl_specs                          { [push_def (GDecl (make_decl $2 (DeclIdent "")))] }
-| lifetime_declaration decl_specs enter_scope init_declarator_list leave_scope    { make_gdecls_with_init $2 $4 }
+| lifetime_declaration decl_specs                          { [push_def (LDecl (List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 (DeclIdent "")))] }
 
 decl_spec:
 | storage_class_spec                      { [$1] }

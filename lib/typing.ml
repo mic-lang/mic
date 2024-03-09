@@ -235,6 +235,7 @@ let rec type_program =
   | [] -> []
   | Decl (n, ty) :: xs -> Decl (n, type_conv ty) :: type_program xs
   | GDecl (n, ty) :: xs -> GDecl (n, type_conv ty) :: type_program xs
+  | LDecl (blk, kind, (n, ty)) :: xs -> LDecl (blk, kind, (n, type_conv ty)) :: type_program xs
   | StructDecl n :: xs -> StructDecl n :: type_program xs
   | UnionDecl n :: xs -> UnionDecl n :: type_program xs
   | EnumDecl n :: xs -> EnumDecl n :: type_program xs
@@ -253,3 +254,5 @@ let rec type_program =
   | EnumDef (n, l) :: xs -> EnumDef (n, l) :: type_program xs
   | FunctionDef ((n, ty), stmt) :: xs ->
       FunctionDef ((n, type_conv ty), type_stmt stmt) :: type_program xs
+  | LFunctionDef (blk, kind, (n, ty), stmt) :: xs ->
+      LFunctionDef (blk, kind, (n, type_conv ty), type_stmt stmt) :: type_program xs

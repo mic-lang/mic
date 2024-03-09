@@ -200,6 +200,7 @@ let rec gen_stmt = function
 and gen_item = function
   | Decl (name, ty) -> gen_decl name ty ^ ";"
   | GDecl _ -> ""
+  | LDecl _ -> ""
   | StructDecl _ -> ""
   | UnionDecl _ -> ""
   | EnumDecl _ -> ""
@@ -209,10 +210,12 @@ and gen_item = function
   | UnionDef _ -> ""
   | EnumDef _ -> ""
   | FunctionDef _ -> ""
+  | LFunctionDef _ -> ""
 
 and gen_item_global = function
   | Decl _ -> ""
   | GDecl (name, ty) -> gen_decl name ty ^ ";" ^ "\n"
+  | LDecl (_, _, (name, ty)) -> gen_decl name ty ^ ";" ^ "\n"
   | StructDecl _ -> ""
   | UnionDecl _ -> ""
   | EnumDecl _ -> ""
@@ -223,6 +226,8 @@ and gen_item_global = function
   | UnionDef _ -> ""
   | EnumDef _ -> ""
   | FunctionDef ((name, ty), stmt) ->
+      "\n" ^ gen_decl name ty ^ " " ^ gen_stmt stmt ^ "\n"
+  | LFunctionDef (_, _, (name, ty), stmt) ->
       "\n" ^ gen_decl name ty ^ " " ^ gen_stmt stmt ^ "\n"
 
 let gen_program program = String.concat "" (List.map gen_item_global program)
