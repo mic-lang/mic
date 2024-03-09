@@ -1,27 +1,28 @@
+lifetime <depth p, depth q, kind a>
 static struct X func(struct Y a, int b) {
     struct Y {int x;};
     return (struct X){0};
 }
-struct X;
+struct X dyn* x;
 struct X{void x;};
-struct X;
+struct X* y;
 
 extern int printf(const char *, ...);
 
-int main () {
+int main () using p {
     struct X *const b = func((struct X){.x=0});
     goto label;
-    struct Y a; 
-    struct Y{int a;};
+    struct Y p* a;
+    struct Y{int a;} p auto* b;
     func;
 label : 
-    for (int i=0;i<5;i++){
+    for (int i=0;i<5;i++) using q {
         printf("%d");
         if (i==4)
         break;
         if (i<5)continue;
     }
-    switch (0){
+    switch (0) using q {
         case 0:
         case 1:
         default:
@@ -41,7 +42,7 @@ Z;
 void(*func)(int a);
 
 char *const ptr [4] ;
-char (*const ptr)[4];
+char (p*const ptr)[4];
 void (*signal (int sig, void(*func)(int a)))(int b);
 void (*(*p)[10])(int a, int b);
 struct X x = (struct X){.x=0,};

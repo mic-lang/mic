@@ -98,7 +98,10 @@ and gen_unop = function
   | Deref -> "*"
   | Sizeof -> "sizeof "
 
-and gen_value = function VInt str | VFloat str | VStr str -> str
+and gen_value = function
+  | VChar str -> "'" ^ str ^ "'"
+  | VInt str | VFloat str -> str
+  | VStr str -> "\"" ^ str ^ "\""
 
 and gen_expr = function
   | EConst v -> gen_value v

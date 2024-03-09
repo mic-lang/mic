@@ -7,7 +7,11 @@ let raise exn =
 
 let spr fmt s = Printf.sprintf fmt s
 
-type value = VInt of string | VFloat of string | VStr of string
+type value =
+  | VChar of string
+  | VInt of string
+  | VFloat of string
+  | VStr of string
 [@@deriving show]
 
 type binary =

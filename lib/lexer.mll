@@ -55,6 +55,7 @@ rule token = parse
 | "union"     { UNION }
 | "enum"      { ENUM }
 | "typedef"   { TYPEDEF }
+| "auto"      { AUTO }
 | "static"    { STATIC }
 | "extern"    { EXTERN }
 | "const"     { CONST }
@@ -71,6 +72,12 @@ rule token = parse
 | "switch"    { SWITCH }
 | "case"      { CASE }
 | "default"   { DEFAULT }
+| "dyn"       { DYN }
+| "drop"      { DROP }
+| "using"     { USING }
+| "lifetime"  { LIFETIME }
+| "depth"     { DEPTH }
+| "kind"      { KIND }
 | '+'         { PLUS }
 | "++"        { INC }
 | '-'         { MINUS }
