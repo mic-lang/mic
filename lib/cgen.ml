@@ -109,10 +109,12 @@ and gen_expr = function
       match List.nth (List.rev !Env.program) id with
       | Decl (name, _)
       | GDecl (name, _)
+      | LDecl (_, _, (name, _))
       | VarDef ((name, _), _)
       | GVarDef ((name, _), _)
       | FunctionDef ((name, _), _) ->
           name
+      | LFunctionDef (_, _, (name, _), _) -> name
       | _ -> failwith "gen_expr")
   | EBinary (bin, lhs, rhs) ->
       "(" ^ gen_expr lhs ^ " " ^ gen_binop bin ^ " " ^ gen_expr rhs ^ ")"

@@ -1,5 +1,4 @@
 # The Mic Programming Language
-# bcaml
 Usage
 
 ```bash
@@ -15,25 +14,25 @@ int x;
 };
 return (struct X){0};
 }
-struct X;
+struct X *x;
 struct X {
 void x;
 };
-struct X;
+struct X *y;
 extern int printf(const char *);
 
 int main() {
 struct X *const b = func((struct X){.x = 0});
 goto label;
-struct Y a;
+struct Y *a;
 struct Y {
 int a;
-};
+} *b;
 func;
 label:
 for (int i = 0; (i < 5); i++)
 {
-printf(%d);
+printf("%d");
 if ((i == 4))
 break;
 
@@ -56,10 +55,10 @@ break;
 
 return 0;
 }
-char c = \n;
+char c = '\n';
 unsigned i = 5;
 struct X x = {.x = 0};
-char *var[(4 + 5)] = abc;
+char *var[(4 + 5)] = "abc";
 int *const x;
 typedef struct X Z;
 Z;

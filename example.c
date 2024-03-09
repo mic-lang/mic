@@ -4,7 +4,12 @@ static struct X func(struct Y a, int b) {
     return (struct X){0};
 }
 struct X dyn* x;
-struct X{void x;};
+
+lifetime <depth p, kind a>
+struct X{
+    void p a* x;
+};
+
 struct X* y;
 
 extern int printf(const char *, ...);

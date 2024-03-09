@@ -97,7 +97,7 @@ let make_uniondef name decl =
       | None -> TsUnionDef (push_def (UnionDef (name, decl))))
 
 let is_decl name = function
-  | (Decl (n, _) | GDecl (n, _)) when n = name -> true
+  | (Decl (n, _) | GDecl (n, _) | LDecl (_, _, (n, _))) when n = name -> true
   | _ -> false
 
 let lookup_decl name l = find_item (is_decl name) l
@@ -110,6 +110,7 @@ let lookup_vardef name l = find_item (is_vardef name) l
 
 let is_functiondef name = function
   | FunctionDef ((n, _), _) when n = name -> true
+  | LFunctionDef (_, _, (n, _), _) when n = name -> true
   | _ -> false
 
 let lookup_functiondef name l = find_item (is_functiondef name) l

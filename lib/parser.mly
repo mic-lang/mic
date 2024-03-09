@@ -335,6 +335,7 @@ depth_qualifer:
 | STATIC                                  {}
 | AUTO                                    {}
 | DYN                                     {}
+| ident                                   {}
 
 pointer:
 | "*" list(type_qual)                        { List.mem TqConst $2 }
@@ -466,5 +467,5 @@ external_decl:
 function_def:
 | decl_specs enter_scope declarator "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts($5)) }
 | decl_specs enter_scope declarator USING ident "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts($7)) }
-| lifetime_declaration decl_specs enter_scope declarator "{" list(item) "}" leave_scope    { FunctionDef(make_decl $2 $4, SStmts($6)) }
-| lifetime_declaration decl_specs enter_scope declarator USING ident "{" list(item) "}" leave_scope    { FunctionDef(make_decl $2 $4, SStmts($8)) }
+| lifetime_declaration decl_specs enter_scope declarator "{" list(item) "}" leave_scope    { LFunctionDef(List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 $4, SStmts($6)) }
+| lifetime_declaration decl_specs enter_scope declarator USING ident "{" list(item) "}" leave_scope    { LFunctionDef(List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 $4, SStmts($8)) }
