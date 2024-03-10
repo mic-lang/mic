@@ -39,17 +39,13 @@ let conv_ident = function
   | Some s -> s 
   | None -> ""
 
-type lparams =
-  | Depth of string
-  | Kind of string
-
 let filter_depth = function
-| Depth str -> Some str
-| _ -> None
+  | Depth str -> Some str
+  | _ -> None
 
 let filter_kind = function
-| Kind str -> Some str
-| _ -> None
+  | Kind str -> Some str
+  | _ -> None
 
 %}
 %token LPAREN "(" RPAREN ")" LBRACKET "[" RBRACKET "]" LBRACE "{" RBRACE "}" DOT "." COMMA ","
@@ -70,7 +66,7 @@ let filter_kind = function
 %token <string> CHAR INT
 %token <string> FLOAT
 %token<string> STR
-%token<string> ID TYPE_ID
+%token<string> ID LID TYPE_ID DEPTH_ID KIND_ID
 
 %nonassoc NO_ELSE
 %nonassoc ELSE 
@@ -84,11 +80,18 @@ translation_unit:
 
 ident:
 | ID                                      { $1 }
+| LID                                     { $1 }
+| DEPTH_ID                                { $1 }
+| KIND_ID                                 { $1 }
 | TYPE_ID                                 { $1 }
 
+larg:
+| DEPTH_ID                                {}
+| depth_qualifer                          {}
 
 primary_expr:
 | ID                                      { EVar (lookup_var $1) }
+| LID LT separated_list(",", larg) GT     { EVar (lookup_var $1) }
 | CHAR                                    { EConst (VChar $1) }
 | INT                                     { EConst (VInt $1) }
 | FLOAT                                   { EConst (VFloat $1) }
@@ -206,11 +209,11 @@ constant_expr:
 | conditional_expr                        { $1 }
 
 lifetime_declaration:
-| LIFETIME LT separated_list(",", lifetime_parameter) GT                   { $3 }
+| LIFETIME LT separated_list(",", lparam) GT { enter_scope_first (); $3 }
 
-lifetime_parameter:
-| DEPTH ident                             { Depth $2 }
-| KIND ident                              { Kind $2 }
+lparam:
+| DEPTH ident                             { ignore(push_lparam (Depth $2)); (Depth $2 : expr item) }
+| KIND ident                              { ignore(push_lparam (Kind $2)); (Kind $2 : expr item) }
 
 decl:
 | decl_specs                          { [push_def (Decl (make_decl $1 (DeclIdent "")))] }
@@ -219,7 +222,7 @@ decl:
 gdecl:
 | decl_specs                          { [push_def (GDecl (make_decl $1 (DeclIdent "")))] }
 | decl_specs enter_scope init_declarator_list leave_scope    { make_gdecls_with_init $1 $3 }
-| lifetime_declaration decl_specs                          { [push_def (LDecl (List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 (DeclIdent "")))] }
+| lifetime_declaration decl_specs leave_scope_last                         { [push_def (LDecl (List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 (DeclIdent "")))] }
 
 decl_spec:
 | storage_class_spec                      { [$1] }
@@ -229,6 +232,7 @@ decl_spec:
 
 decl_specs:
 | decl_specs_sub                          { TDeclSpec $1 }
+| TYPE_ID                                 { TDeclSpec [TsTypedef (Option.get (lookup_typedef $1))] }
 
 decl_specs_sub:
 | decl_spec                               { $1 }
@@ -262,7 +266,7 @@ type_spec:
 | TUNSIGNED                               { TsUnsigned }
 | struct_or_union_spec                    { $1 }
 | enum_spec                               { TsInt }
-| TYPE_ID                                 { TsTypedef (Option.get (lookup_typedef $1)) }
+
 
 spec_qual_list:
 | spec_qual_list_sub                      { $1 }
@@ -287,10 +291,12 @@ struct_or_union_spec:
                                               (conv_ident $2)
                                               (List.flatten $4) }
 | STRUCT ident                            { make_structdecl $2 } 
+| STRUCT ident  LT separated_list(",", larg) GT { make_structdecl $2 }
 | UNION ident? "{" list(struct_decl) "}"  { make_uniondef
                                               (conv_ident $2)
                                               (List.flatten $4) }
 | UNION ident                             { make_uniondecl $2 }
+| UNION ident  LT separated_list(",", larg) GT { make_uniondecl $2 }
 
 struct_decl:
 | spec_qual_list struct_declarator_list? ";"
@@ -326,21 +332,36 @@ declarator:
 | direct_declarator                       { $1 }
 
 direct_declarator:
-| ID                                      { DeclIdent $1 }
-| "(" declarator ")"                      { $2 }
+| ident                                   { DeclIdent $1 }
+| "(" id_declarator ")"                   { $2 }
 | direct_declarator "[" constant_expr "]" { DeclArr($1,$3) }
 | direct_declarator "(" parameter_type_list ")"
+                                       { DeclFun($1,$3) }
+
+id_declarator:
+| pointer declarator                      { if $1 then DeclConstPtr $2 else DeclPtr $2 }
+| direct_id_declarator                    { $1 }
+
+direct_id_declarator:
+| ID                                      { DeclIdent $1 }
+| LID                                     { DeclIdent $1 }
+| DEPTH_ID                                { DeclIdent $1 }
+| KIND_ID                                 { DeclIdent $1 }
+| "(" id_declarator ")"                   { $2 }
+| direct_id_declarator "[" constant_expr "]" { DeclArr($1,$3) }
+| direct_id_declarator "(" parameter_type_list ")"
                                           { DeclFun($1,$3) }
+
 depth_qualifer:
 | STATIC                                  {}
 | AUTO                                    {}
 | DYN                                     {}
-| ident                                   {}
+| KIND_ID                                 {}
 
 pointer:
 | "*" list(type_qual)                        { List.mem TqConst $2 }
-| ID "*" list(type_qual)                     { List.mem TqConst $3 }
-| ID depth_qualifer "*" list(type_qual)      { List.mem TqConst $4 }
+| DEPTH_ID "*" list(type_qual)               { List.mem TqConst $3 }
+| DEPTH_ID depth_qualifer "*" list(type_qual) { List.mem TqConst $4 }
 | DYN "*" list(type_qual)                    { List.mem TqConst $3 }
 
 parameter_type_list:
@@ -403,6 +424,9 @@ enter_scope:
 leave_scope:
 |                                         { leave_scope () }
 
+leave_scope_last:
+|                                         { leave_scope_last () }
+
 item:
 | decl ";"                                { SDef($1) }
 | stmt                                    { $1 }
@@ -423,12 +447,14 @@ case_or_default:
 | CASE conditional_expr ":" list(item)    { SCase ($2,$4) }
 | DEFAULT ":" list(item)                  { SDefault ($3) }
 
+using_depth:
+| USING ident                             { ignore (push_def (Depth $2)) }
 
 compound_stmt:
 | enter_scope "{" list(item) "}" leave_scope
                                           { SStmts($3) }
-| enter_scope USING ident "{" list(item) "}" leave_scope
-                                          { SStmts($5) }
+| enter_scope using_depth "{" list(item) "}" leave_scope
+                                          { SStmts($4) }
 
 selection_stmt_1:
 | IF "(" expr ")" item %prec NO_ELSE      { SIfElse($3,$5,SStmts []) }
@@ -437,8 +463,8 @@ selection_stmt_1:
 selection_stmt_2:
 | SWITCH "(" expr ")" enter_scope "{" list(case_or_default) "}" leave_scope
                                           { SSwitch($3,$7) }
-| SWITCH "(" expr ")" enter_scope USING ident "{" list(case_or_default) "}" leave_scope
-                                          { SSwitch($3,$9) }
+| SWITCH "(" expr ")" enter_scope using_depth "{" list(case_or_default) "}" leave_scope
+                                          { SSwitch($3,$8) }
 
 iteration_stmt:
 | WHILE "(" expr ")" item                 { SWhile($3,$5) }
@@ -451,8 +477,8 @@ iteration_stmt:
                                           { SFor(SDef $4,$6,$8,$10) }
 | FOR "(" enter_scope decl ";" expr? ";" expr? ")" "{" list(item) "}" leave_scope
                                           { SFor(SDef $4,$6,$8,SStmts $11) }
-| FOR "(" enter_scope decl ";" expr? ";" expr? ")" USING ident "{" list(item) "}" leave_scope
-                                          { SFor(SDef $4,$6,$8,SStmts $13) }                                      
+| FOR "(" enter_scope decl ";" expr? ";" expr? ")" using_depth "{" list(item) "}" leave_scope
+                                          { SFor(SDef $4,$6,$8,SStmts $12) }                                      
 jump_stmt:
 | GOTO ident ";"                          { SGoto $2 }
 | CONTINUE ";"                            { SContinue }
@@ -466,6 +492,6 @@ external_decl:
 
 function_def:
 | decl_specs enter_scope declarator "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts($5)) }
-| decl_specs enter_scope declarator USING ident "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts($7)) }
-| lifetime_declaration decl_specs enter_scope declarator "{" list(item) "}" leave_scope    { LFunctionDef(List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 $4, SStmts($6)) }
-| lifetime_declaration decl_specs enter_scope declarator USING ident "{" list(item) "}" leave_scope    { LFunctionDef(List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 $4, SStmts($8)) }
+| decl_specs enter_scope declarator using_depth "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts($6)) }
+| lifetime_declaration decl_specs enter_scope declarator "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef(List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 $4, SStmts($6)) }
+| lifetime_declaration decl_specs enter_scope declarator using_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef(List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 $4, SStmts($7)) }

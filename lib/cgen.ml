@@ -61,6 +61,7 @@ and gen_decl str = function
   | TArr (ty, expr) -> gen_decl (str ^ "[" ^ gen_expr expr ^ "]") ty
   | TFun (ty, l) -> gen_decl (str ^ "(" ^ gen_params l ^ ")") ty
   | TDeclSpec l -> gen_declspecs l ^ if str = "" then "" else " " ^ str
+  | _ -> failwith "gen_decl"
 
 and gen_params l =
   String.concat ", " (List.map (fun (name, ty) -> gen_decl name ty) l)
@@ -201,35 +202,18 @@ let rec gen_stmt = function
 
 and gen_item = function
   | Decl (name, ty) -> gen_decl name ty ^ ";"
-  | GDecl _ -> ""
-  | LDecl _ -> ""
-  | StructDecl _ -> ""
-  | UnionDecl _ -> ""
-  | EnumDecl _ -> ""
   | VarDef ((name, ty), init) -> gen_decl name ty ^ " = " ^ gen_init init ^ ";"
-  | GVarDef _ -> ""
-  | StructDef _ -> ""
-  | UnionDef _ -> ""
-  | EnumDef _ -> ""
-  | FunctionDef _ -> ""
-  | LFunctionDef _ -> ""
+  | _ -> ""
 
 and gen_item_global = function
-  | Decl _ -> ""
   | GDecl (name, ty) -> gen_decl name ty ^ ";" ^ "\n"
   | LDecl (_, _, (name, ty)) -> gen_decl name ty ^ ";" ^ "\n"
-  | StructDecl _ -> ""
-  | UnionDecl _ -> ""
-  | EnumDecl _ -> ""
-  | VarDef _ -> ""
   | GVarDef ((name, ty), init) ->
       gen_decl name ty ^ " = " ^ gen_init init ^ ";" ^ "\n"
-  | StructDef _ -> ""
-  | UnionDef _ -> ""
-  | EnumDef _ -> ""
   | FunctionDef ((name, ty), stmt) ->
       "\n" ^ gen_decl name ty ^ " " ^ gen_stmt stmt ^ "\n"
   | LFunctionDef (_, _, (name, ty), stmt) ->
       "\n" ^ gen_decl name ty ^ " " ^ gen_stmt stmt ^ "\n"
+  | _ -> ""
 
 let gen_program program = String.concat "" (List.map gen_item_global program)

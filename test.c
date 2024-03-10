@@ -1,28 +1,29 @@
 lifetime <depth p, depth q, kind a>
-static struct X func(struct Y a, int b) {
+static struct X<p,a> func(struct Y a, int b) {
     struct Y {int x;};
     return (struct X){0};
 }
-struct X dyn* x;
+struct X<static, dyn> dyn* x;
 
 lifetime <depth p, kind a>
 struct X{
     void p a* x;
 };
 
-struct X* y;
+struct X<static, dyn>* y;
 
 extern int printf(const char *, ...);
 
 int main () using p {
-    struct X *const b = func((struct X){.x=0});
+    func<>;;
+    //struct X<, dyn> *const b = func< dyn>((struct X){.x=0});
     goto label;
     struct Y p* a;
     struct Y{int a;} p auto* b;
-    func;
+    func<>;
 label : 
     for (int i=0;i<5;i++) using q {
-        printf("%d");
+        //printf("%d");
         if (i==4)
         break;
         if (i<5)continue;
@@ -45,9 +46,8 @@ int* const x;
 typedef struct X Z;
 Z;
 void(*func)(int a);
-
 char *const ptr [4] ;
-char (p*const ptr)[4];
+char (*const ptrq)[4];
 void (*signal (int sig, void(*func)(int a)))(int b);
 void (*(*p)[10])(int a, int b);
 struct X x = (struct X){.x=0,};

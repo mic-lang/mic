@@ -131,12 +131,16 @@ rule token = parse
 | (integer as i) ['l' 'L']      { INT (i) }
 | (integer as i) ("ul" | "UL")  { INT (i) }
 | '\'' (char as c) '\''         { CHAR (c) }
-| (fnum as f) [ 'f' 'F' ]?      { FLOAT ( f) }
+| (fnum as f) [ 'f' 'F' ]?      { FLOAT (f) }
 | (fnum as f) [ 'l' 'L' ]       { FLOAT( f) }
 | '"'                           { STR (string "" lexbuf) }
-| ident  as n                   { match lookup_typedef n with
-                                  | Some _ -> TYPE_ID n
-                                  | None -> ID n }
+| ident  as n                   { try match snd (lookup_id_kind n) with
+                                  | IdUsual -> ID n
+                                  | IdLifetime ->LID n
+                                  | IdType -> TYPE_ID n
+                                  | IdDepth -> DEPTH_ID n
+                                  | IdKind -> KIND_ID n with _ -> ID n
+                                }
 | eof   { EOF }
 | _     { raise (LexerError ("illegal token '%s'" ^ Lexing.lexeme lexbuf)) }
 

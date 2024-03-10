@@ -9,6 +9,7 @@ let raise exn =
 
 let program : program ref = ref []
 let spr fmt s = Printf.sprintf fmt s
+let lparams : id list ref = ref []
 let curr_scope : id list ref = ref []
 let stack : id list list ref = ref []
 
@@ -17,6 +18,11 @@ let map_to_program l =
 
 let get_scope () = map_to_program !curr_scope
 let get_stack () = map_to_program (List.flatten (!curr_scope :: !stack))
+
+let push_lparam lparam =
+  let id = List.length !program in
+  lparams := id :: !lparams;
+  program := lparam :: !program
 
 let push_def def =
   let id = List.length !program in
@@ -31,6 +37,15 @@ let enter_scope () =
 let leave_scope () =
   curr_scope := List.hd !stack;
   stack := List.tl !stack
+
+let enter_scope_first () =
+  stack := !curr_scope :: !stack;
+  curr_scope := !lparams
+
+let leave_scope_last () =
+  curr_scope := List.hd !stack;
+  stack := List.tl !stack;
+  lparams := []
 
 let update_program id def =
   program :=
@@ -101,12 +116,14 @@ let is_decl name = function
   | _ -> false
 
 let lookup_decl name l = find_item (is_decl name) l
+let lookup_decl name = lookup_decl name (get_stack ())
 
 let is_vardef name = function
   | (VarDef ((n, _), _) | GVarDef ((n, _), _)) when n = name -> true
   | _ -> false
 
 let lookup_vardef name l = find_item (is_vardef name) l
+let lookup_vardef name = lookup_vardef name (get_stack ())
 
 let is_functiondef name = function
   | FunctionDef ((n, _), _) when n = name -> true
@@ -114,31 +131,74 @@ let is_functiondef name = function
   | _ -> false
 
 let lookup_functiondef name l = find_item (is_functiondef name) l
+let lookup_functiondef name = lookup_functiondef name (get_stack ())
 
-let lookup_typedef name =
-  match lookup_decl name (get_stack ()) with
+let is_nonlid_functiondef name = function
+  | FunctionDef ((n, _), _) when n = name -> true
+  | _ -> false
+
+let lookup_nonlid_functiondef name l = find_item (is_nonlid_functiondef name) l
+
+let lookup_nonlid_functiondef name =
+  lookup_nonlid_functiondef name (get_stack ())
+
+let is_lid name = function
+  | LFunctionDef (_, _, (n, _), _) when n = name -> true
+  | _ -> false
+
+let lookup_lid name l = find_item (is_lid name) l
+let lookup_lid name = lookup_lid name (get_stack ())
+let is_depth name = function Depth n when n = name -> true | _ -> false
+let lookup_depth name l = find_item (is_depth name) l
+let lookup_depth name = lookup_depth name (get_stack ())
+let is_kind name = function Kind n when n = name -> true | _ -> false
+let lookup_kind name l = find_item (is_kind name) l
+let lookup_kind name = lookup_kind name (get_stack ())
+
+let lookup_nontypedef_decl name =
+  match lookup_decl name with
   | Some id -> (
-      print_endline name;
       match List.nth (List.rev !program) id with
       | Decl (_, ty) | GDecl (_, ty) ->
           let dsl = get_declspec ty in
-          if List.mem ScsTypedef dsl then (
-            print_endline name;
-            Some id)
-          else None
+          if not (List.mem ScsTypedef dsl) then Some id else None
       | _ -> None)
   | None -> None
 
+let lookup_typedef name =
+  match lookup_decl name with
+  | Some id -> (
+      match List.nth (List.rev !program) id with
+      | Decl (_, ty) | GDecl (_, ty) ->
+          let dsl = get_declspec ty in
+          if List.mem ScsTypedef dsl then Some id else None
+      | _ -> None)
+  | None -> None
+
+type id_kind = IdUsual | IdLifetime | IdType | IdDepth | IdKind
+
+let lookup_id_kind name =
+  let lookup_func =
+    [
+      (lookup_depth, IdDepth);
+      (lookup_kind, IdKind);
+      (lookup_nontypedef_decl, IdUsual);
+      (lookup_vardef, IdUsual);
+      (lookup_typedef, IdType);
+      (lookup_nonlid_functiondef, IdUsual);
+      (lookup_lid, IdLifetime);
+    ]
+  in
+  let dic =
+    List.filter_map
+      (function Some id, kind -> Some (id, kind) | _ -> None)
+      (List.map (fun (f, kind) -> (f name, kind)) lookup_func)
+  in
+  match List.fast_sort (fun (x, _) (y, _) -> -compare x y) dic with
+  | [] -> failwith "lookup_id_kind"
+  | x :: _ -> x
+
 let lookup_var name =
-  match lookup_decl name (get_stack ()) with
-  | Some id ->
-      if Option.is_some (lookup_typedef name) then raise Not_found else id
-  | None -> (
-      match lookup_vardef name (get_stack ()) with
-      | Some id -> id
-      | None -> (
-          match lookup_functiondef name (get_stack ()) with
-          | Some id -> id
-          | None ->
-              print_endline name;
-              raise Not_found))
+  match lookup_id_kind name with
+  | id, IdUsual | id, IdLifetime -> id
+  | _ -> failwith "lookup_var"

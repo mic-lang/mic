@@ -65,6 +65,7 @@ let rec type_conv =
           in
           TDeclSpec [ e ]
         with _ -> failwith "type_conv")
+  | _ -> failwith "type_conv"
 
 let rec type_expr = function
   | Syntax.EConst v -> (
@@ -233,6 +234,8 @@ let rec type_program =
   let open Syntax in
   function
   | [] -> []
+  | Depth n :: xs -> Depth n :: type_program xs
+  | Kind n :: xs -> Kind n :: type_program xs
   | Decl (n, ty) :: xs -> Decl (n, type_conv ty) :: type_program xs
   | GDecl (n, ty) :: xs -> GDecl (n, type_conv ty) :: type_program xs
   | LDecl (blk, kind, (n, ty)) :: xs ->
