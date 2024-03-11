@@ -44,7 +44,7 @@ type 'expr item =
   | Kind of string
   | Decl of 'expr decl
   | GDecl of 'expr decl
-  | LDecl of (string * int) list * string list * 'expr decl
+  | LDecl of lparam list * 'expr decl
   | StructDecl of string
   | UnionDecl of string
   | EnumDecl of string
@@ -54,7 +54,7 @@ type 'expr item =
   | UnionDef of string * 'expr decl list
   | EnumDef of string * (string * int) list
   | FunctionDef of 'expr decl * 'expr stmt
-  | LFunctionDef of (string * int) list * string list * 'expr decl * 'expr stmt
+  | LFunctionDef of lparam list * 'expr decl * 'expr stmt
 [@@deriving show]
 
 and id = int [@@deriving show]
@@ -152,6 +152,7 @@ and ds =
 
 and depth = Depth of string * int | Global | Decayed
 and kind = Auto | Dyn | Static | User of string | Unknown
+and lparam = LBlock of string * int | LKind of string
 
 and 'expr pointer = {
   pointee_ty : 'expr ty;

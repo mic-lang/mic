@@ -42,14 +42,6 @@ let conv_ident = function
   | Some s -> s 
   | None -> ""
 
-let filter_depth = function
-  | Block (str, depth) -> Some (str, depth)
-  | _ -> None
-
-let filter_kind = function
-  | Kind str -> Some str
-  | _ -> None
-
 %}
 %token LPAREN "(" RPAREN ")" LBRACKET "[" RBRACKET "]" LBRACE "{" RBRACE "}" DOT "." COMMA ","
 %token AND "&" STAR "*" PLUS "+" MINUS "-" NOT "~" BANG "!" DIV "/" MOD "%" LT "<" GT ">" HAT "^" OR "|" 
@@ -217,8 +209,8 @@ lifetime_declaration:
 lparam:
 | DEPTH ident                             
                                           { let depth = get_curr_depth () in
-                                            ignore(push_lparam_depth (Block ($2, depth))); (Block ($2, depth) : expr item) }
-| KIND ident                              { ignore(push_lparam (Kind $2)); (Kind $2 : expr item) }
+                                            ignore(push_lparam_depth (Block ($2, depth))); LBlock ($2, depth) }
+| KIND ident                              { ignore(push_lparam (Kind $2)); LKind $2 }
 
 decl:
 | decl_specs                          { [push_def (Decl (make_decl $1 (DeclIdent "")))] }
@@ -227,7 +219,7 @@ decl:
 gdecl:
 | decl_specs                          { [push_def (GDecl (make_decl $1 (DeclIdent "")))] }
 | decl_specs enter_scope init_declarator_list leave_scope    { make_gdecls_with_init $1 $3 }
-| lifetime_declaration decl_specs leave_scope_last                         { [push_def (LDecl (List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 (DeclIdent "")))] }
+| lifetime_declaration decl_specs leave_scope_last                         { [push_def (LDecl ($1, make_decl $2 (DeclIdent "")))] }
 
 decl_spec:
 | storage_class_spec                      { [$1] }
@@ -508,5 +500,5 @@ external_decl:
 function_def:
 | decl_specs enter_scope declarator no_depth "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts(Depth(fst $4, snd $4), $6)) }
 | decl_specs enter_scope declarator using_depth "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts(Depth(fst $4, snd $4), $6)) }
-| lifetime_declaration decl_specs enter_scope declarator no_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef(List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 $4, SStmts(Depth(fst $5, snd $5), $7)) }
-| lifetime_declaration decl_specs enter_scope declarator using_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef(List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 $4, SStmts(Depth(fst $5, snd $5), $7)) }
+| lifetime_declaration decl_specs enter_scope declarator no_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef($1, make_decl $2 $4, SStmts(Depth(fst $5, snd $5), $7)) }
+| lifetime_declaration decl_specs enter_scope declarator using_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef($1, make_decl $2 $4, SStmts(Depth(fst $5, snd $5), $7)) }

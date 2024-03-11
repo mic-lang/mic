@@ -107,12 +107,12 @@ and gen_expr = function
       match List.nth (List.rev !Env.program) id with
       | Decl (name, _)
       | GDecl (name, _)
-      | LDecl (_, _, (name, _))
+      | LDecl (_, (name, _))
       | VarDef ((name, _), _)
       | GVarDef ((name, _), _)
       | FunctionDef ((name, _), _) ->
           name
-      | LFunctionDef (_, _, (name, _), _) -> name
+      | LFunctionDef (_, (name, _), _) -> name
       | _ -> failwith "gen_expr")
   | EBinary (bin, lhs, rhs) ->
       "(" ^ gen_expr lhs ^ " " ^ gen_binop bin ^ " " ^ gen_expr rhs ^ ")"
@@ -202,12 +202,12 @@ and gen_item = function
 
 and gen_item_global = function
   | GDecl (name, ty) -> gen_decl name ty ^ ";" ^ "\n"
-  | LDecl (_, _, (name, ty)) -> gen_decl name ty ^ ";" ^ "\n"
+  | LDecl (_, (name, ty)) -> gen_decl name ty ^ ";" ^ "\n"
   | GVarDef ((name, ty), init) ->
       gen_decl name ty ^ " = " ^ gen_init init ^ ";" ^ "\n"
   | FunctionDef ((name, ty), stmt) ->
       "\n" ^ gen_decl name ty ^ " " ^ gen_stmt stmt ^ "\n"
-  | LFunctionDef (_, _, (name, ty), stmt) ->
+  | LFunctionDef (_, (name, ty), stmt) ->
       "\n" ^ gen_decl name ty ^ " " ^ gen_stmt stmt ^ "\n"
   | _ -> ""
 
