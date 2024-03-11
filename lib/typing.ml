@@ -65,7 +65,6 @@ let rec type_conv =
           in
           TDeclSpec [ e ]
         with _ -> failwith "type_conv")
-  | _ -> failwith "type_conv"
 
 let rec type_expr = function
   | Syntax.EConst v -> (
@@ -209,7 +208,7 @@ let rec type_stmt =
   let open Syntax in
   function
   | SDef l -> SDef l
-  | SStmts stmts -> SStmts (List.map type_stmt stmts)
+  | SStmts (d, stmts) -> SStmts (d, List.map type_stmt stmts)
   | SWhile (expr, stmt) -> SWhile (type_expr expr, type_stmt stmt)
   | SDoWhile (stmt, expr) -> SDoWhile (type_stmt stmt, type_expr expr)
   | SFor (stmt1, expr1, expr2, stmt2) ->
@@ -234,7 +233,7 @@ let rec type_program =
   let open Syntax in
   function
   | [] -> []
-  | Depth n :: xs -> Depth n :: type_program xs
+  | Depth (d, n) :: xs -> Depth (d, n) :: type_program xs
   | Kind n :: xs -> Kind n :: type_program xs
   | Decl (n, ty) :: xs -> Decl (n, type_conv ty) :: type_program xs
   | GDecl (n, ty) :: xs -> GDecl (n, type_conv ty) :: type_program xs

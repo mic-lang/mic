@@ -24,6 +24,17 @@ let push_lparam lparam =
   lparams := id :: !lparams;
   program := lparam :: !program
 
+let curr_depth : int ref = ref 0
+let get_curr_depth () = !curr_depth
+
+let push_lparam_depth lparam =
+  let id = List.length !program in
+  lparams := id :: !lparams;
+  program := lparam :: !program;
+  let ret = get_curr_depth () in
+  incr curr_depth;
+  ret
+
 let push_def def =
   let id = List.length !program in
   curr_scope := id :: !curr_scope;
@@ -32,20 +43,23 @@ let push_def def =
 
 let enter_scope () =
   stack := !curr_scope :: !stack;
-  curr_scope := []
+  curr_scope := [];
+  incr curr_depth
 
 let leave_scope () =
   curr_scope := List.hd !stack;
-  stack := List.tl !stack
+  stack := List.tl !stack;
+  decr curr_depth
 
 let enter_scope_first () =
   stack := !curr_scope :: !stack;
-  curr_scope := !lparams
+  curr_scope := !lparams;
+  incr curr_depth
 
 let leave_scope_last () =
   curr_scope := List.hd !stack;
   stack := List.tl !stack;
-  lparams := []
+  curr_depth := 0
 
 let update_program id def =
   program :=
@@ -148,7 +162,7 @@ let is_lid name = function
 
 let lookup_lid name l = find_item (is_lid name) l
 let lookup_lid name = lookup_lid name (get_stack ())
-let is_depth name = function Depth n when n = name -> true | _ -> false
+let is_depth name = function Depth (n, _) when n = name -> true | _ -> false
 let lookup_depth name l = find_item (is_depth name) l
 let lookup_depth name = lookup_depth name (get_stack ())
 let is_kind name = function Kind n when n = name -> true | _ -> false

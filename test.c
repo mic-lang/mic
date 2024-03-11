@@ -16,14 +16,14 @@ extern int printf(const char *, ...);
 
 int main () using p {
     func<>;;
-    //struct X<, dyn> *const b = func< dyn>((struct X){.x=0});
+    struct X<p, dyn> *const b = func<p, dyn>((struct X){.x=0});
     goto label;
     struct Y p* a;
     struct Y{int a;} p auto* b;
     func<>;
 label : 
     for (int i=0;i<5;i++) using q {
-        //printf("%d");
+        printf("%d");
         if (i==4)
         break;
         if (i<5)continue;

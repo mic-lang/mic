@@ -61,7 +61,6 @@ and gen_decl str = function
   | TArr (ty, expr) -> gen_decl (str ^ "[" ^ gen_expr expr ^ "]") ty
   | TFun (ty, l) -> gen_decl (str ^ "(" ^ gen_params l ^ ")") ty
   | TDeclSpec l -> gen_declspecs l ^ if str = "" then "" else " " ^ str
-  | _ -> failwith "gen_decl"
 
 and gen_params l =
   String.concat ", " (List.map (fun (name, ty) -> gen_decl name ty) l)
@@ -161,8 +160,8 @@ let rec gen_stmt = function
   | SDef l ->
       String.concat ""
         (List.map (fun id -> gen_item (List.nth (List.rev !Env.program) id)) l)
-  | SStmts [] -> ""
-  | SStmts l ->
+  | SStmts (_, []) -> ""
+  | SStmts (_, l) ->
       "{\n"
       ^ String.concat "" (List.map (fun stmt -> gen_stmt stmt ^ "\n") l)
       ^ "}"

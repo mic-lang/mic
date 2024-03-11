@@ -40,7 +40,7 @@ type unary = Plus | Minus | BitNot | LogNot | Ref | Deref | Sizeof
 [@@deriving show]
 
 type 'expr item =
-  | Depth of string
+  | Depth of string * int
   | Kind of string
   | Decl of 'expr decl
   | GDecl of 'expr decl
@@ -99,7 +99,7 @@ and 'expr design =
 
 and 'expr stmt =
   | SDef of id list
-  | SStmts of 'expr stmt list
+  | SStmts of depth * 'expr stmt list
   | SWhile of 'expr * 'expr stmt
   | SDoWhile of 'expr stmt * 'expr
   | SFor of 'expr stmt * 'expr option * 'expr option * 'expr stmt
@@ -121,8 +121,6 @@ and 'expr ty =
   | TConstPtr of 'expr ty
   | TArr of 'expr ty * 'expr
   | TDeclSpec of ds list
-  | TBlk
-  | TKind
 [@@deriving show]
 
 and 'expr decl = string * 'expr ty [@@deriving show]
@@ -153,10 +151,11 @@ and ds =
   | FsNoreturn
 [@@deriving show]
 
+and depth = Local of string * int | Static
+
 let rec get_declspec = function
   | TFun (ty, _) | TConstPtr ty | TPtr ty | TArr (ty, _) -> get_declspec ty
   | TDeclSpec l -> l
-  | _ -> failwith "get_declspec"
 
 let get_base_ty = function
   | TConstPtr ty | TPtr ty | TArr (ty, _) -> ty

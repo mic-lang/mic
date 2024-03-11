@@ -40,7 +40,7 @@ let conv_ident = function
   | None -> ""
 
 let filter_depth = function
-  | Depth str -> Some str
+  | Depth (str, _) -> Some str
   | _ -> None
 
 let filter_kind = function
@@ -212,7 +212,7 @@ lifetime_declaration:
 | LIFETIME LT separated_list(",", lparam) GT { enter_scope_first (); $3 }
 
 lparam:
-| DEPTH ident                             { ignore(push_lparam (Depth $2)); (Depth $2 : expr item) }
+| DEPTH ident                             { ignore(push_lparam_depth (Depth ($2, get_curr_depth ()))); (Depth ($2, get_curr_depth ()) : expr item) }
 | KIND ident                              { ignore(push_lparam (Kind $2)); (Kind $2 : expr item) }
 
 decl:
@@ -448,21 +448,24 @@ case_or_default:
 | DEFAULT ":" list(item)                  { SDefault ($3) }
 
 using_depth:
-| USING ident                             { ignore (push_def (Depth $2)) }
+| USING ident                             { ignore (push_def (Depth ($2, get_curr_depth ()))); ($2, get_curr_depth ()) }
+
+no_depth:
+|                                         { ("", get_curr_depth ()) }
 
 compound_stmt:
-| enter_scope "{" list(item) "}" leave_scope
-                                          { SStmts($3) }
+| enter_scope  no_depth "{" list(item) "}" leave_scope
+                                          { SStmts(Local(fst $2, snd $2), $4) }
 | enter_scope using_depth "{" list(item) "}" leave_scope
-                                          { SStmts($4) }
+                                          { SStmts(Local(fst $2, snd $2), $4) }
 
 selection_stmt_1:
-| IF "(" expr ")" item %prec NO_ELSE      { SIfElse($3,$5,SStmts []) }
+| IF "(" expr ")" item %prec NO_ELSE      { SIfElse($3,$5,SStmts (Local("", get_curr_depth ()), [])) }
 | IF "(" expr ")" item ELSE item          { SIfElse($3,$5,$7) }
 
 selection_stmt_2:
-| SWITCH "(" expr ")" enter_scope "{" list(case_or_default) "}" leave_scope
-                                          { SSwitch($3,$7) }
+| SWITCH "(" expr ")" enter_scope no_depth "{" list(case_or_default) "}" leave_scope
+                                          { SSwitch($3,$8) }
 | SWITCH "(" expr ")" enter_scope using_depth "{" list(case_or_default) "}" leave_scope
                                           { SSwitch($3,$8) }
 
@@ -475,10 +478,10 @@ iteration_stmt:
                                           { SFor(SDef $4,$6,$8,SDef $10) } 
 | FOR "(" enter_scope decl ";" expr? ";" expr? ")" stmt leave_scope
                                           { SFor(SDef $4,$6,$8,$10) }
-| FOR "(" enter_scope decl ";" expr? ";" expr? ")" "{" list(item) "}" leave_scope
-                                          { SFor(SDef $4,$6,$8,SStmts $11) }
+| FOR "(" enter_scope decl ";" expr? ";" expr? ")" no_depth "{" list(item) "}" leave_scope
+                                          { SFor(SDef $4,$6,$8,SStmts (Local(fst $10, snd $10), $12)) }
 | FOR "(" enter_scope decl ";" expr? ";" expr? ")" using_depth "{" list(item) "}" leave_scope
-                                          { SFor(SDef $4,$6,$8,SStmts $12) }                                      
+                                          { SFor(SDef $4,$6,$8,SStmts (Local(fst $10, snd $10), $12)) }                                      
 jump_stmt:
 | GOTO ident ";"                          { SGoto $2 }
 | CONTINUE ";"                            { SContinue }
@@ -491,7 +494,7 @@ external_decl:
 | ";"                                     { [] }
 
 function_def:
-| decl_specs enter_scope declarator "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts($5)) }
-| decl_specs enter_scope declarator using_depth "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts($6)) }
-| lifetime_declaration decl_specs enter_scope declarator "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef(List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 $4, SStmts($6)) }
-| lifetime_declaration decl_specs enter_scope declarator using_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef(List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 $4, SStmts($7)) }
+| decl_specs enter_scope declarator no_depth "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts(Local(fst $4, snd $4), $6)) }
+| decl_specs enter_scope declarator using_depth "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts(Local(fst $4, snd $4), $6)) }
+| lifetime_declaration decl_specs enter_scope declarator no_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef(List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 $4, SStmts(Local(fst $5, snd $5), $7)) }
+| lifetime_declaration decl_specs enter_scope declarator using_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef(List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 $4, SStmts(Local(fst $5, snd $5), $7)) }
