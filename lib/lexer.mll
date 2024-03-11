@@ -138,7 +138,7 @@ rule token = parse
                                   | IdUsual -> ID n
                                   | IdLifetime ->LID n
                                   | IdType -> TYPE_ID n
-                                  | IdDepth -> DEPTH_ID n
+                                  | IdBlock -> DEPTH_ID n
                                   | IdKind -> KIND_ID n with _ -> ID n
                                 }
 | eof   { EOF }

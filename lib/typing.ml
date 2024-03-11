@@ -35,13 +35,50 @@ let rec type_conv =
   function
   | TFun (ty, decl) ->
       TPtr
-        (TFun (type_conv ty, List.map (fun (n, ty) -> (n, type_conv ty)) decl))
-  | TArr (ty, _) -> TPtr (type_conv ty)
-  | TConstPtr ty -> TConstPtr (type_conv ty)
-  | TPtr (TFun (ty, decl)) ->
+        {
+          pointee_ty =
+            TFun (type_conv ty, List.map (fun (n, ty) -> (n, type_conv ty)) decl);
+          pointee_depth = Global;
+          pointee_kind = Static;
+          pointee_qual = [ Const ];
+        }
+  | TArr (ty, _) ->
       TPtr
-        (TFun (type_conv ty, List.map (fun (n, ty) -> (n, type_conv ty)) decl))
-  | TPtr ty -> TPtr (type_conv ty)
+        {
+          pointee_ty = type_conv ty;
+          pointee_depth = Decayed;
+          pointee_kind = Unknown;
+          pointee_qual = [ Const ];
+        }
+  | TPtr
+      {
+        pointee_ty = TFun (ty, decl);
+        pointee_depth = depth;
+        pointee_kind = kind;
+        pointee_qual = qual;
+      } ->
+      TPtr
+        {
+          pointee_ty =
+            TFun (type_conv ty, List.map (fun (n, ty) -> (n, type_conv ty)) decl);
+          pointee_depth = depth;
+          pointee_kind = kind;
+          pointee_qual = qual;
+        }
+  | TPtr
+      {
+        pointee_ty = ty;
+        pointee_depth = depth;
+        pointee_kind = kind;
+        pointee_qual = qual;
+      } ->
+      TPtr
+        {
+          pointee_ty = type_conv ty;
+          pointee_depth = depth;
+          pointee_kind = kind;
+          pointee_qual = qual;
+        }
   | TDeclSpec l -> (
       if
         List.exists
@@ -69,8 +106,17 @@ let rec type_conv =
 let rec type_expr = function
   | Syntax.EConst v -> (
       match v with
-      | VStr _ -> EConst (Syntax.TPtr (TDeclSpec [ TsChar ]), v)
-      | _ -> EConst (Syntax.TPtr (TDeclSpec [ TsInt ]), v))
+      | VStr _ ->
+          EConst
+            ( Syntax.TPtr
+                {
+                  pointee_ty = TDeclSpec [ TsChar ];
+                  pointee_depth = Global;
+                  pointee_kind = Static;
+                  pointee_qual = [ Const ];
+                },
+              v )
+      | _ -> EConst (Syntax.TDeclSpec [ TsInt ], v))
   | Syntax.EVar id -> (
       match List.nth (List.rev !Env.program) id with
       | Decl decl | VarDef (decl, _) | FunctionDef (decl, _) ->
@@ -97,7 +143,16 @@ let rec type_expr = function
       EUnary (get_expr_ty expr, un, expr)
   | Syntax.EUnary (Ref, expr) ->
       let expr = type_expr expr in
-      EUnary (TPtr (get_expr_ty expr), Ref, expr)
+      EUnary
+        ( TPtr
+            {
+              pointee_ty = get_expr_ty expr;
+              pointee_depth = Global;
+              pointee_kind = Static;
+              pointee_qual = [ Const ];
+            },
+          Ref,
+          expr )
   | Syntax.EUnary (Deref, expr) ->
       let expr = type_expr expr in
       EUnary (type_conv (Syntax.get_base_ty (get_expr_ty expr)), Deref, expr)
@@ -233,7 +288,7 @@ let rec type_program =
   let open Syntax in
   function
   | [] -> []
-  | Depth (d, n) :: xs -> Depth (d, n) :: type_program xs
+  | Block (d, n) :: xs -> Block (d, n) :: type_program xs
   | Kind n :: xs -> Kind n :: type_program xs
   | Decl (n, ty) :: xs -> Decl (n, type_conv ty) :: type_program xs
   | GDecl (n, ty) :: xs -> GDecl (n, type_conv ty) :: type_program xs

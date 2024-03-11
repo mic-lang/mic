@@ -53,11 +53,9 @@ let rec gen_declspec = function
 and gen_declspecs l = String.concat " " (List.map (fun ds -> gen_declspec ds) l)
 
 and gen_decl str = function
-  | TConstPtr ((TArr _ | TFun _) as ty) ->
-      gen_decl ("(" ^ "*const " ^ str ^ ")") ty
-  | TConstPtr ty -> gen_decl ("*const " ^ str) ty
-  | TPtr ((TArr _ | TFun _) as ty) -> gen_decl ("(" ^ "*" ^ str ^ ")") ty
-  | TPtr ty -> gen_decl ("*" ^ str) ty
+  | TPtr { pointee_ty = (TArr _ | TFun _) as ty; _ } ->
+      gen_decl ("(" ^ "*" ^ str ^ ")") ty
+  | TPtr { pointee_ty = ty; _ } -> gen_decl ("*" ^ str) ty
   | TArr (ty, expr) -> gen_decl (str ^ "[" ^ gen_expr expr ^ "]") ty
   | TFun (ty, l) -> gen_decl (str ^ "(" ^ gen_params l ^ ")") ty
   | TDeclSpec l -> gen_declspecs l ^ if str = "" then "" else " " ^ str

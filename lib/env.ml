@@ -161,12 +161,20 @@ let is_lid name = function
 
 let lookup_lid name l = find_item (is_lid name) l
 let lookup_lid name = lookup_lid name (get_stack ())
-let is_depth name = function Depth (n, _) when n = name -> true | _ -> false
+let is_depth name = function Block (n, _) when n = name -> true | _ -> false
 let lookup_depth name l = find_item (is_depth name) l
 let lookup_depth name = lookup_depth name (get_stack ())
 let is_kind name = function Kind n when n = name -> true | _ -> false
 let lookup_kind name l = find_item (is_kind name) l
 let lookup_kind name = lookup_kind name (get_stack ())
+
+let get_depth name =
+  match lookup_depth name with
+  | Some id -> (
+      match List.nth (List.rev !program) id with
+      | Block (name, depth) -> Depth (name, depth)
+      | _ -> failwith "get_depth")
+  | None -> failwith "get_depth"
 
 let lookup_nontypedef_decl name =
   match lookup_decl name with
@@ -188,12 +196,12 @@ let lookup_typedef name =
       | _ -> None)
   | None -> None
 
-type id_kind = IdUsual | IdLifetime | IdType | IdDepth | IdKind
+type id_kind = IdUsual | IdLifetime | IdType | IdBlock | IdKind
 
 let lookup_id_kind name =
   let lookup_func =
     [
-      (lookup_depth, IdDepth);
+      (lookup_depth, IdBlock);
       (lookup_kind, IdKind);
       (lookup_nontypedef_decl, IdUsual);
       (lookup_vardef, IdUsual);

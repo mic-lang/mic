@@ -40,7 +40,7 @@ type unary = Plus | Minus | BitNot | LogNot | Ref | Deref | Sizeof
 [@@deriving show]
 
 type 'expr item =
-  | Depth of string * int
+  | Block of string * int
   | Kind of string
   | Decl of 'expr decl
   | GDecl of 'expr decl
@@ -117,8 +117,7 @@ and 'expr stmt =
 
 and 'expr ty =
   | TFun of 'expr ty * 'expr decl list
-  | TPtr of 'expr ty
-  | TConstPtr of 'expr ty
+  | TPtr of 'expr pointer
   | TArr of 'expr ty * 'expr
   | TDeclSpec of ds list
 [@@deriving show]
@@ -151,12 +150,22 @@ and ds =
   | FsNoreturn
 [@@deriving show]
 
-and depth = Local of string * int | Global
+and depth = Depth of string * int | Global | Decayed
+and kind = Auto | Dyn | Static | User of string | Unknown
+
+and 'expr pointer = {
+  pointee_ty : 'expr ty;
+  pointee_depth : depth;
+  pointee_kind : kind;
+  pointee_qual : qualifier list;
+}
+
+and qualifier = Const | Volatile | Drop
 
 let rec get_declspec = function
-  | TFun (ty, _) | TConstPtr ty | TPtr ty | TArr (ty, _) -> get_declspec ty
+  | TFun (ty, _) | TPtr { pointee_ty = ty; _ } | TArr (ty, _) -> get_declspec ty
   | TDeclSpec l -> l
 
 let get_base_ty = function
-  | TConstPtr ty | TPtr ty | TArr (ty, _) -> ty
+  | TPtr { pointee_ty = ty; _ } | TArr (ty, _) -> ty
   | _ -> failwith "get_base_ty"

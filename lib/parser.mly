@@ -3,8 +3,7 @@ open Syntax
 open Env 
 
 type declarator =
-| DeclPtr of declarator
-| DeclConstPtr of declarator
+| DeclPtr of declarator * depth * kind * qualifier list
 | DeclIdent of string
 | DeclArr of declarator * expr
 | DeclFun of declarator * expr decl list
@@ -12,8 +11,12 @@ type declarator =
 let make_decl ty d = 
   let name = ref "" in
   let rec aux ty = function
-    | DeclPtr d -> aux (TPtr ty) d 
-    | DeclConstPtr d -> aux (TConstPtr ty) d
+    | DeclPtr (d, dep, kind, qual) -> aux (TPtr {
+                  pointee_ty = ty;
+                  pointee_depth = dep;
+                  pointee_kind = kind;
+                  pointee_qual = qual
+                }) d 
     | DeclIdent n -> name := n; ty 
     | DeclArr(d,sz) -> aux (TArr(ty,sz)) d 
     | DeclFun(d,dl) -> aux (TFun(ty,dl)) d
@@ -40,7 +43,7 @@ let conv_ident = function
   | None -> ""
 
 let filter_depth = function
-  | Depth (str, depth) -> Some (str, depth)
+  | Block (str, depth) -> Some (str, depth)
   | _ -> None
 
 let filter_kind = function
@@ -214,7 +217,7 @@ lifetime_declaration:
 lparam:
 | DEPTH ident                             
                                           { let depth = get_curr_depth () in
-                                            ignore(push_lparam_depth (Depth ($2, depth))); (Depth ($2, depth) : expr item) }
+                                            ignore(push_lparam_depth (Block ($2, depth))); (Block ($2, depth) : expr item) }
 | KIND ident                              { ignore(push_lparam (Kind $2)); (Kind $2 : expr item) }
 
 decl:
@@ -330,7 +333,7 @@ enum_const:
 | ident                                   { }
 
 declarator:
-| pointer declarator                      { if $1 then DeclConstPtr $2 else DeclPtr $2 }
+| pointer declarator                      { DeclPtr ($2, fst (fst $1), snd (fst $1), snd $1) }
 | direct_declarator                       { $1 }
 
 direct_declarator:
@@ -341,7 +344,7 @@ direct_declarator:
                                        { DeclFun($1,$3) }
 
 id_declarator:
-| pointer declarator                      { if $1 then DeclConstPtr $2 else DeclPtr $2 }
+| pointer declarator                      { DeclPtr ($2, fst (fst $1), snd (fst $1), snd $1) }
 | direct_id_declarator                    { $1 }
 
 direct_id_declarator:
@@ -355,16 +358,21 @@ direct_id_declarator:
                                           { DeclFun($1,$3) }
 
 depth_qualifer:
-| STATIC                                  {}
-| AUTO                                    {}
-| DYN                                     {}
-| KIND_ID                                 {}
+| STATIC                                  { Static }
+| AUTO                                    { Auto }
+| DYN                                     { Dyn }
+| KIND_ID                                 { User $1 }
+
+pointer_qual:
+| CONST                                   { Const }
+| VOLATILE                                { Volatile }
+| DROP                                    { Drop }
 
 pointer:
-| "*" list(type_qual)                        { List.mem TqConst $2 }
-| DEPTH_ID "*" list(type_qual)               { List.mem TqConst $3 }
-| DEPTH_ID depth_qualifer "*" list(type_qual) { List.mem TqConst $4 }
-| DYN "*" list(type_qual)                    { List.mem TqConst $3 }
+| "*" list(pointer_qual)                        { ((Global, Static), $2) }
+| DEPTH_ID "*" list(pointer_qual)               { ((get_depth $1, Auto), $3) }
+| DEPTH_ID depth_qualifer "*" list(pointer_qual) { ((get_depth $1, $2), $4) }
+| DYN "*" list(pointer_qual)                    { ((Global, Dyn), $3) }
 
 parameter_type_list:
 |                                         { [] }
@@ -382,8 +390,8 @@ parameter_decl:
                                                 [make_decl $1 (DeclIdent "")] }
 
 abstract_declarator:
-| pointer                                 { DeclPtr(DeclIdent "") }
-| pointer abstract_declarator             { DeclPtr $2 }
+| pointer                                 { DeclPtr (DeclIdent "", fst (fst $1), snd (fst $1), snd $1) }
+| pointer abstract_declarator             { DeclPtr ($2, fst (fst $1), snd (fst $1), snd $1) }
 | direct_abstract_declarator              { $1 }
 
 direct_abstract_declarator:
@@ -452,26 +460,26 @@ case_or_default:
 | DEFAULT ":" list(item)                  { SDefault ($3) }
 
 using_depth:
-| USING ident                             { ignore (push_def (Depth ($2, get_curr_depth ()))); ($2, get_curr_depth ()) }
+| USING ident                             { ignore (push_def (Block ($2, get_curr_depth ()))); ($2, get_curr_depth ()) }
 
 no_depth:
 |                                         { ("", get_curr_depth ()) }
 
 compound_stmt:
 | enter_scope  no_depth "{" list(item) "}" leave_scope
-                                          { SStmts(Local(fst $2, snd $2), $4) }
+                                          { SStmts(Depth(fst $2, snd $2), $4) }
 | enter_scope using_depth "{" list(item) "}" leave_scope
-                                          { SStmts(Local(fst $2, snd $2), $4) }
+                                          { SStmts(Depth(fst $2, snd $2), $4) }
 
 selection_stmt_1:
-| IF "(" expr ")" item %prec NO_ELSE      { SIfElse($3,$5,SStmts (Local("", get_curr_depth ()), [])) }
+| IF "(" expr ")" item %prec NO_ELSE      { SIfElse($3,$5,SStmts (Depth("", get_curr_depth ()), [])) }
 | IF "(" expr ")" item ELSE item          { SIfElse($3,$5,$7) }
 
 selection_stmt_2:
 | SWITCH "(" expr ")" enter_scope no_depth "{" list(case_or_default) "}" leave_scope
-                                          { SSwitch($3,SStmts(Local(fst $6, snd $6), $8)) }
+                                          { SSwitch($3,SStmts(Depth(fst $6, snd $6), $8)) }
 | SWITCH "(" expr ")" enter_scope using_depth "{" list(case_or_default) "}" leave_scope
-                                          { SSwitch($3,SStmts(Local(fst $6, snd $6), $8)) }
+                                          { SSwitch($3,SStmts(Depth(fst $6, snd $6), $8)) }
 
 iteration_stmt:
 | WHILE "(" expr ")" item                 { SWhile($3,$5) }
@@ -483,9 +491,9 @@ iteration_stmt:
 | FOR "(" enter_scope decl ";" expr? ";" expr? ")" stmt leave_scope
                                           { SFor(SDef $4,$6,$8,$10) }
 | FOR "(" enter_scope decl ";" expr? ";" expr? ")" no_depth "{" list(item) "}" leave_scope
-                                          { SFor(SDef $4,$6,$8,SStmts (Local(fst $10, snd $10), $12)) }
+                                          { SFor(SDef $4,$6,$8,SStmts (Depth(fst $10, snd $10), $12)) }
 | FOR "(" enter_scope decl ";" expr? ";" expr? ")" using_depth "{" list(item) "}" leave_scope
-                                          { SFor(SDef $4,$6,$8,SStmts (Local(fst $10, snd $10), $12)) }                                      
+                                          { SFor(SDef $4,$6,$8,SStmts (Depth(fst $10, snd $10), $12)) }                                      
 jump_stmt:
 | GOTO ident ";"                          { SGoto $2 }
 | CONTINUE ";"                            { SContinue }
@@ -498,7 +506,7 @@ external_decl:
 | ";"                                     { [] }
 
 function_def:
-| decl_specs enter_scope declarator no_depth "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts(Local(fst $4, snd $4), $6)) }
-| decl_specs enter_scope declarator using_depth "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts(Local(fst $4, snd $4), $6)) }
-| lifetime_declaration decl_specs enter_scope declarator no_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef(List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 $4, SStmts(Local(fst $5, snd $5), $7)) }
-| lifetime_declaration decl_specs enter_scope declarator using_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef(List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 $4, SStmts(Local(fst $5, snd $5), $7)) }
+| decl_specs enter_scope declarator no_depth "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts(Depth(fst $4, snd $4), $6)) }
+| decl_specs enter_scope declarator using_depth "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts(Depth(fst $4, snd $4), $6)) }
+| lifetime_declaration decl_specs enter_scope declarator no_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef(List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 $4, SStmts(Depth(fst $5, snd $5), $7)) }
+| lifetime_declaration decl_specs enter_scope declarator using_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef(List.filter_map filter_depth $1, List.filter_map filter_kind $1, make_decl $2 $4, SStmts(Depth(fst $5, snd $5), $7)) }

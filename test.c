@@ -1,5 +1,5 @@
 lifetime <depth p, depth q, kind a>
-static struct X<p,a> func(struct Y a, int b) {
+static struct X<p,a> func(struct Y a, int b) using p {
     struct Y {int x;};
     return (struct X){0};
 }
