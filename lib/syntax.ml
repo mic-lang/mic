@@ -109,7 +109,7 @@ and 'expr stmt =
   | SGoto of string
   | SContinue
   | SBreak
-  | SSwitch of 'expr * 'expr stmt list
+  | SSwitch of 'expr * 'expr stmt
   | SCase of 'expr * 'expr stmt list
   | SDefault of 'expr stmt list
   | SExpr of 'expr option

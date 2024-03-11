@@ -224,7 +224,7 @@ let rec type_stmt =
   | SGoto name -> SGoto name
   | SContinue -> SContinue
   | SBreak -> SBreak
-  | SSwitch (expr, stmts) -> SSwitch (type_expr expr, List.map type_stmt stmts)
+  | SSwitch (expr, stmt) -> SSwitch (type_expr expr, type_stmt stmt)
   | SCase (expr, stmts) -> SCase (type_expr expr, List.map type_stmt stmts)
   | SDefault stmts -> SDefault (List.map type_stmt stmts)
   | SExpr expr -> SExpr (Option.map type_expr expr)

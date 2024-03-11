@@ -186,10 +186,8 @@ let rec gen_stmt = function
   | SGoto label -> "goto " ^ label ^ ";"
   | SContinue -> "continue;"
   | SBreak -> "break;"
-  | SSwitch (expr, l) ->
-      "switch (" ^ gen_expr expr ^ ")\n" ^ "{\n"
-      ^ String.concat "" (List.map (fun stmt -> gen_stmt stmt ^ "\n") l)
-      ^ "}" ^ "\n"
+  | SSwitch (expr, stmt) ->
+      "switch (" ^ gen_expr expr ^ ")\n" ^ gen_stmt stmt ^ "\n"
   | SCase (expr, l) ->
       "case " ^ gen_expr expr ^ ":\n"
       ^ String.concat "" (List.map (fun stmt -> gen_stmt stmt ^ "\n") l)

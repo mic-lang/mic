@@ -469,9 +469,9 @@ selection_stmt_1:
 
 selection_stmt_2:
 | SWITCH "(" expr ")" enter_scope no_depth "{" list(case_or_default) "}" leave_scope
-                                          { SSwitch($3,$8) }
+                                          { SSwitch($3,SStmts(Local(fst $6, snd $6), $8)) }
 | SWITCH "(" expr ")" enter_scope using_depth "{" list(case_or_default) "}" leave_scope
-                                          { SSwitch($3,$8) }
+                                          { SSwitch($3,SStmts(Local(fst $6, snd $6), $8)) }
 
 iteration_stmt:
 | WHILE "(" expr ")" item                 { SWhile($3,$5) }
