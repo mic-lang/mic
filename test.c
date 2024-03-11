@@ -14,6 +14,7 @@ struct X<static, dyn>* y;
 
 extern int printf(const char *, ...);
 
+lifetime <depth r>
 int main () using p {
     func<>;;
     struct X<p, dyn> *const b = func<p, dyn>((struct X){.x=0});

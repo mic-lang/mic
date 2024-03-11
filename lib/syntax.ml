@@ -44,7 +44,7 @@ type 'expr item =
   | Kind of string
   | Decl of 'expr decl
   | GDecl of 'expr decl
-  | LDecl of string list * string list * 'expr decl
+  | LDecl of (string * int) list * string list * 'expr decl
   | StructDecl of string
   | UnionDecl of string
   | EnumDecl of string
@@ -54,7 +54,7 @@ type 'expr item =
   | UnionDef of string * 'expr decl list
   | EnumDef of string * (string * int) list
   | FunctionDef of 'expr decl * 'expr stmt
-  | LFunctionDef of string list * string list * 'expr decl * 'expr stmt
+  | LFunctionDef of (string * int) list * string list * 'expr decl * 'expr stmt
 [@@deriving show]
 
 and id = int [@@deriving show]
@@ -151,7 +151,7 @@ and ds =
   | FsNoreturn
 [@@deriving show]
 
-and depth = Local of string * int | Static
+and depth = Local of string * int | Global
 
 let rec get_declspec = function
   | TFun (ty, _) | TConstPtr ty | TPtr ty | TArr (ty, _) -> get_declspec ty

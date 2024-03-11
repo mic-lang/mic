@@ -53,8 +53,7 @@ let leave_scope () =
 
 let enter_scope_first () =
   stack := !curr_scope :: !stack;
-  curr_scope := !lparams;
-  incr curr_depth
+  curr_scope := !lparams
 
 let leave_scope_last () =
   curr_scope := List.hd !stack;

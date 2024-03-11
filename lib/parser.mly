@@ -40,7 +40,7 @@ let conv_ident = function
   | None -> ""
 
 let filter_depth = function
-  | Depth (str, _) -> Some str
+  | Depth (str, depth) -> Some (str, depth)
   | _ -> None
 
 let filter_kind = function
@@ -212,7 +212,9 @@ lifetime_declaration:
 | LIFETIME LT separated_list(",", lparam) GT { enter_scope_first (); $3 }
 
 lparam:
-| DEPTH ident                             { ignore(push_lparam_depth (Depth ($2, get_curr_depth ()))); (Depth ($2, get_curr_depth ()) : expr item) }
+| DEPTH ident                             
+                                          { let depth = get_curr_depth () in
+                                            ignore(push_lparam_depth (Depth ($2, depth))); (Depth ($2, depth) : expr item) }
 | KIND ident                              { ignore(push_lparam (Kind $2)); (Kind $2 : expr item) }
 
 decl:
@@ -423,6 +425,8 @@ enter_scope:
 
 leave_scope:
 |                                         { leave_scope () }
+
+
 
 leave_scope_last:
 |                                         { leave_scope_last () }
