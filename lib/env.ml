@@ -8,29 +8,35 @@ let raise exn =
   | _ -> raise exn
 
 let program : program ref = ref []
+let lparams : program ref = ref []
+let in_lparams : bool ref = ref false
 let spr fmt s = Printf.sprintf fmt s
-let lparams : id list ref = ref []
+let lscope : id list ref = ref []
 let curr_scope : id list ref = ref []
 let stack : id list list ref = ref []
 
 let map_to_program l =
   List.rev (List.map (fun n -> (n, List.nth (List.rev !program) n)) l)
 
+let map_to_lparam l =
+  List.rev (List.map (fun n -> (n, List.nth (List.rev !lparams) n)) l)
+
 let get_scope () = map_to_program !curr_scope
 let get_stack () = map_to_program (List.flatten (!curr_scope :: !stack))
+let get_lscope () = map_to_lparam !lscope
 
 let push_lparam lparam =
-  let id = List.length !program in
-  lparams := id :: !lparams;
-  program := lparam :: !program
+  let id = List.length !lparams in
+  lscope := id :: !lscope;
+  lparams := lparam :: !lparams
 
 let curr_depth : int ref = ref 0
 let get_curr_depth () = !curr_depth
 
 let push_lparam_depth lparam =
-  let id = List.length !program in
-  lparams := id :: !lparams;
-  program := lparam :: !program;
+  let id = List.length !lparams in
+  lscope := id :: !lscope;
+  lparams := lparam :: !lparams;
   let ret = get_curr_depth () in
   incr curr_depth;
   ret
@@ -52,13 +58,17 @@ let leave_scope () =
   decr curr_depth
 
 let enter_scope_first () =
+  program := !lparams @ !program;
   stack := !curr_scope :: !stack;
-  curr_scope := !lparams
+  curr_scope := !lscope;
+  in_lparams := false
 
 let leave_scope_last () =
   curr_scope := List.hd !stack;
   stack := List.tl !stack;
-  curr_depth := 0
+  curr_depth := 0;
+  lscope := [];
+  lparams := []
 
 let update_program id def =
   program :=
@@ -166,15 +176,23 @@ let lookup_lid name l = find_item (is_lid name) l
 let lookup_lid name = lookup_lid name (get_stack ())
 let is_depth name = function Block (n, _) when n = name -> true | _ -> false
 let lookup_depth name l = find_item (is_depth name) l
-let lookup_depth name = lookup_depth name (get_stack ())
+
+let lookup_depth name =
+  lookup_depth name (if !in_lparams then get_lscope () else get_stack ())
+
 let is_kind name = function Kind n when n = name -> true | _ -> false
 let lookup_kind name l = find_item (is_kind name) l
-let lookup_kind name = lookup_kind name (get_stack ())
+
+let lookup_kind name =
+  lookup_kind name (if !in_lparams then get_lscope () else get_stack ())
 
 let get_depth name =
   match lookup_depth name with
   | Some id -> (
-      match List.nth (List.rev !program) id with
+      match
+        if !in_lparams then List.nth (List.rev !lparams) id
+        else List.nth (List.rev !program) id
+      with
       | Block (name, depth) -> (name, depth)
       | _ -> failwith "get_depth")
   | None -> failwith "get_depth"

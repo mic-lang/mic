@@ -204,7 +204,7 @@ constant_expr:
 | conditional_expr                        { $1 }
 
 lifetime_declaration:
-| LIFETIME LT separated_list(",", lparam) GT { enter_scope_first (); $3 }
+| LIFETIME LT separated_list(",", lparam) GT { in_lparams := true; $3 }
 
 lparam:
 | DEPTH ident                             
@@ -297,12 +297,12 @@ struct_or_union_spec:
 | UNION ident  LT separated_list(",", larg) GT { make_uniondecl $2 $4 }
 
 ldecl:
-| lifetime_declaration STRUCT ident? "{" list(struct_decl) "}" leave_scope_last                         
+| lifetime_declaration STRUCT ident? "{" list(struct_decl) "}" enter_scope_first leave_scope_last                         
 { [push_def (LDecl ($1, make_decl (TDeclSpec [make_structdef
                                               (conv_ident $3)
                                               $1
                                               (List.flatten $5)]) (DeclIdent "")))] }
-| lifetime_declaration UNION ident? "{" list(struct_decl) "}" leave_scope_last                         
+| lifetime_declaration UNION ident? "{" list(struct_decl) "}" enter_scope_first leave_scope_last                         
 { [push_def (LDecl ($1, make_decl (TDeclSpec [make_uniondef
                                               (conv_ident $3)
                                               $1
@@ -436,10 +436,12 @@ designator_list:
 enter_scope:
 |                                         { enter_scope () }
 
+enter_scope_first:
+|                                         { enter_scope_first () }
+
+
 leave_scope:
 |                                         { leave_scope () }
-
-
 
 leave_scope_last:
 |                                         { leave_scope_last () }
@@ -514,5 +516,5 @@ external_decl:
 function_def:
 | decl_specs enter_scope declarator no_depth "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts(Depth(fst $4, snd $4), $6)) }
 | decl_specs enter_scope declarator using_depth "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts(Depth(fst $4, snd $4), $6)) }
-| lifetime_declaration decl_specs enter_scope declarator no_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef($1, make_decl $2 $4, SStmts(Depth(fst $5, snd $5), $7)) }
-| lifetime_declaration decl_specs enter_scope declarator using_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef($1, make_decl $2 $4, SStmts(Depth(fst $5, snd $5), $7)) }
+| lifetime_declaration decl_specs enter_scope_first enter_scope declarator no_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef($1, make_decl $2 $5, SStmts(Depth(fst $6, snd $6), $8)) }
+| lifetime_declaration decl_specs enter_scope_first enter_scope declarator using_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef($1, make_decl $2 $5, SStmts(Depth(fst $6, snd $6), $8)) }

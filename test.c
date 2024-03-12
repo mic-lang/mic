@@ -5,18 +5,17 @@ static struct X<p, q> func(struct Y a, int b) using p {
 }
 struct X;
 struct Y;
-//struct X<static, dyn> dyn* x;
+struct X<static, dyn> dyn* x;
 
 lifetime <depth p, kind a>
 struct X {
     void p a* x;
 };
 
-//struct X<static, dyn>* y;
+struct X<static, dyn>* y;
 
 extern int printf(const char *, ...);
 
-lifetime <depth r>
 int main () using p {
     func<>;;
     struct X<p, dyn> *const b = func<p, dyn>((struct X){.x=0});
