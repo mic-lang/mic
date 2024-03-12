@@ -174,18 +174,18 @@ let rec type_expr = function
   | Syntax.EPostfix (expr, PDot name) -> (
       let expr = type_expr expr in
       match get_expr_ty expr with
-      | TDeclSpec [ (TsStruct id | TsUnion id) ] -> (
+      | TDeclSpec [ (TsStruct (id, _) | TsUnion (id, _)) ] -> (
           match List.nth (List.rev !Env.program) id with
-          | StructDef (_, mems) | UnionDef (_, mems) ->
+          | StructDef (_, _, mems) | UnionDef (_, _, mems) ->
               EPostfix (type_conv (List.assoc name mems), expr, PDot name)
           | _ -> failwith "type_expr: dot")
       | _ -> failwith "type_expr: dot")
   | Syntax.EPostfix (expr, PArrow name) -> (
       let expr = type_expr expr in
       match Syntax.get_base_ty (get_expr_ty expr) with
-      | TDeclSpec [ (TsStruct id | TsUnion id) ] -> (
+      | TDeclSpec [ (TsStruct (id, _) | TsUnion (id, _)) ] -> (
           match List.nth (List.rev !Env.program) id with
-          | StructDef (_, mems) | UnionDef (_, mems) ->
+          | StructDef (_, _, mems) | UnionDef (_, _, mems) ->
               EPostfix (type_conv (List.assoc name mems), expr, PArrow name)
           | _ -> failwith "type_expr: arrow")
       | _ -> failwith "type_expr: arrow")
@@ -209,10 +209,10 @@ and type_init ty init =
                 (design, type_init ty init) :: aux xs
           in
           IVect (aux l)
-      | Syntax.TDeclSpec [ TsStruct id ] ->
+      | Syntax.TDeclSpec [ TsStruct (id, _) ] ->
           let mems =
             match List.nth (List.rev !Env.program) id with
-            | StructDef (_, mems) -> mems
+            | StructDef (_, _, mems) -> mems
             | _ -> failwith "type_init"
           in
           let rec aux loc mems l =
@@ -244,10 +244,10 @@ and type_design ty design loc =
   | Syntax.TArr (ty, _), DIdx (expr, design) ->
       let ty, design = type_design ty design loc in
       (ty, DIdx (type_expr expr, design))
-  | Syntax.TDeclSpec [ TsStruct id ], DField (name, design) ->
+  | Syntax.TDeclSpec [ TsStruct (id, _) ], DField (name, design) ->
       let mems =
         match List.nth (List.rev !Env.program) id with
-        | StructDef (_, mems) -> mems
+        | StructDef (_, _, mems) -> mems
         | _ -> failwith "type_init"
       in
       let ty = try List.assoc name mems with _ -> failwith "type_design" in
@@ -303,11 +303,11 @@ let rec type_program =
   | GVarDef ((n, ty), init) :: xs ->
       GVarDef ((n, type_conv ty), type_init (type_conv ty) init)
       :: type_program xs
-  | StructDef (n, l) :: xs ->
-      StructDef (n, List.map (fun (n, ty) -> (n, type_conv ty)) l)
+  | StructDef (n, lp, l) :: xs ->
+      StructDef (n, lp, List.map (fun (n, ty) -> (n, type_conv ty)) l)
       :: type_program xs
-  | UnionDef (n, l) :: xs ->
-      UnionDef (n, List.map (fun (n, ty) -> (n, type_conv ty)) l)
+  | UnionDef (n, lp, l) :: xs ->
+      UnionDef (n, lp, List.map (fun (n, ty) -> (n, type_conv ty)) l)
       :: type_program xs
   | EnumDef (n, l) :: xs -> EnumDef (n, l) :: type_program xs
   | FunctionDef ((n, ty), stmt) :: xs ->

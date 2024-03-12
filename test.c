@@ -1,16 +1,18 @@
 lifetime <depth p, depth q, kind a>
-static struct X<p,a> func(struct Y a, int b) using p {
+static struct X<p, q> func(struct Y a, int b) using p {
     struct Y {int x;};
     return (struct X){0};
 }
-struct X<static, dyn> dyn* x;
+struct X;
+struct Y;
+//struct X<static, dyn> dyn* x;
 
 lifetime <depth p, kind a>
-struct X{
+struct X {
     void p a* x;
 };
 
-struct X<static, dyn>* y;
+//struct X<static, dyn>* y;
 
 extern int printf(const char *, ...);
 

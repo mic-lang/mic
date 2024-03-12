@@ -10,31 +10,31 @@ let rec gen_declspec = function
   | TsFloat -> "float"
   | TsDouble -> "double"
   | TsVoid -> "void"
-  | TsStruct id -> (
+  | TsStruct (id, _) -> (
       "struct "
       ^
       match List.nth (List.rev !Env.program) id with
       | StructDecl name -> name
-      | StructDef (name, _) -> name
+      | StructDef (name, _, _) -> name
       | _ -> failwith "gen_declspec")
   | TsStructDef id -> (
       "struct "
       ^
       match List.nth (List.rev !Env.program) id with
-      | StructDef (name, l) -> name ^ " {\n" ^ gen_fields l ^ "}"
+      | StructDef (name, _, l) -> name ^ " {\n" ^ gen_fields l ^ "}"
       | _ -> failwith "gen_declspec")
-  | TsUnion id -> (
+  | TsUnion (id, _) -> (
       "union "
       ^
       match List.nth (List.rev !Env.program) id with
       | UnionDecl name -> name
-      | UnionDef (name, _) -> name
+      | UnionDef (name, _, _) -> name
       | _ -> failwith "gen_declspec")
   | TsUnionDef id -> (
       "union "
       ^
       match List.nth (List.rev !Env.program) id with
-      | UnionDef (name, l) -> name ^ " {\n" ^ gen_fields l ^ "}"
+      | UnionDef (name, _, l) -> name ^ " {\n" ^ gen_fields l ^ "}"
       | _ -> failwith "gen_declspec")
   | TsTypedef id -> (
       match List.nth (List.rev !Env.program) id with

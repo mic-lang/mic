@@ -81,8 +81,8 @@ ident:
 | TYPE_ID                                 { $1 }
 
 larg:
-| DEPTH_ID                                {}
-| depth_qualifer                          {}
+| DEPTH_ID                                { LBlock (fst (get_depth $1), snd (get_depth $1)) }
+| depth_qualifer                          { LKind $1  }
 
 primary_expr:
 | ID                                      { EVar (lookup_var $1) }
@@ -210,7 +210,7 @@ lparam:
 | DEPTH ident                             
                                           { let depth = get_curr_depth () in
                                             ignore(push_lparam_depth (Block ($2, depth))); LBlock ($2, depth) }
-| KIND ident                              { ignore(push_lparam (Kind $2)); LKind $2 }
+| KIND ident                              { ignore(push_lparam (Kind $2)); LKind (User $2) }
 
 decl:
 | decl_specs                          { [push_def (Decl (make_decl $1 (DeclIdent "")))] }
@@ -219,7 +219,6 @@ decl:
 gdecl:
 | decl_specs                          { [push_def (GDecl (make_decl $1 (DeclIdent "")))] }
 | decl_specs enter_scope init_declarator_list leave_scope    { make_gdecls_with_init $1 $3 }
-| lifetime_declaration decl_specs leave_scope_last                         { [push_def (LDecl ($1, make_decl $2 (DeclIdent "")))] }
 
 decl_spec:
 | storage_class_spec                      { [$1] }
@@ -286,14 +285,28 @@ function_spec:
 struct_or_union_spec:
 | STRUCT ident? "{" list(struct_decl) "}" { make_structdef
                                               (conv_ident $2)
+                                              []
                                               (List.flatten $4) }
-| STRUCT ident                            { make_structdecl $2 } 
-| STRUCT ident  LT separated_list(",", larg) GT { make_structdecl $2 }
+| STRUCT ident                            { make_structdecl $2 [] } 
+| STRUCT ident  LT separated_list(",", larg) GT { make_structdecl $2 $4 }
 | UNION ident? "{" list(struct_decl) "}"  { make_uniondef
                                               (conv_ident $2)
+                                              []
                                               (List.flatten $4) }
-| UNION ident                             { make_uniondecl $2 }
-| UNION ident  LT separated_list(",", larg) GT { make_uniondecl $2 }
+| UNION ident                             { make_uniondecl $2 [] }
+| UNION ident  LT separated_list(",", larg) GT { make_uniondecl $2 $4 }
+
+ldecl:
+| lifetime_declaration STRUCT ident? "{" list(struct_decl) "}" leave_scope_last                         
+{ [push_def (LDecl ($1, make_decl (TDeclSpec [make_structdef
+                                              (conv_ident $3)
+                                              $1
+                                              (List.flatten $5)]) (DeclIdent "")))] }
+| lifetime_declaration UNION ident? "{" list(struct_decl) "}" leave_scope_last                         
+{ [push_def (LDecl ($1, make_decl (TDeclSpec [make_uniondef
+                                              (conv_ident $3)
+                                              $1
+                                              (List.flatten $5)]) (DeclIdent "")))] }
 
 struct_decl:
 | spec_qual_list struct_declarator_list? ";"
@@ -362,8 +375,8 @@ pointer_qual:
 
 pointer:
 | "*" list(pointer_qual)                        { ((Global, Static), $2) }
-| DEPTH_ID "*" list(pointer_qual)               { ((get_depth $1, Auto), $3) }
-| DEPTH_ID depth_qualifer "*" list(pointer_qual) { ((get_depth $1, $2), $4) }
+| DEPTH_ID "*" list(pointer_qual)               { ((Depth (fst (get_depth $1), snd (get_depth $1)), Auto), $3) }
+| DEPTH_ID depth_qualifer "*" list(pointer_qual) { ((Depth (fst (get_depth $1), snd (get_depth $1)), $2), $4) }
 | DYN "*" list(pointer_qual)                    { ((Global, Dyn), $3) }
 
 parameter_type_list:
@@ -494,7 +507,8 @@ jump_stmt:
 
 external_decl:
 | function_def                            { [push_def $1] }
-| gdecl ";"                                { $1 }
+| gdecl ";"                               { $1 }
+| ldecl ";"                               { $1 }
 | ";"                                     { [] }
 
 function_def:

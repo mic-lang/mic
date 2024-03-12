@@ -74,11 +74,11 @@ let is_uniondecl name = function
   | _ -> false
 
 let is_structdef name = function
-  | StructDef (n, _) when n = name -> true
+  | StructDef (n, _, _) when n = name -> true
   | _ -> false
 
 let is_uniondef name = function
-  | UnionDef (n, _) when n = name -> true
+  | UnionDef (n, _, _) when n = name -> true
   | _ -> false
 
 let rec find_item p = function
@@ -91,38 +91,41 @@ let lookup_uniondecl name l = find_item (is_uniondecl name) l
 let lookup_structdef name l = find_item (is_structdef name) l
 let lookup_uniondef name l = find_item (is_uniondef name) l
 
-let make_structdecl name =
+let make_structdecl name lparams =
   match lookup_structdecl name (get_stack ()) with
-  | Some id -> TsStruct id
+  | Some id -> TsStruct (id, lparams)
   | None -> (
       match lookup_structdef name (get_stack ()) with
-      | Some id -> TsStruct id
-      | None -> TsStruct (push_def (StructDecl name)))
+      | Some id -> TsStruct (id, lparams)
+      | None -> TsStruct (push_def (StructDecl name), lparams))
 
-let make_uniondecl name =
+let make_uniondecl name lparams =
   match lookup_uniondecl name (get_stack ()) with
-  | Some id -> TsUnion id
-  | None -> TsUnion (push_def (UnionDecl name))
+  | Some id -> TsUnion (id, lparams)
+  | None -> (
+      match lookup_structdef name (get_stack ()) with
+      | Some id -> TsUnion (id, lparams)
+      | None -> TsUnion (push_def (UnionDecl name), lparams))
 
-let make_structdef name decl =
+let make_structdef name lparams decl =
   match lookup_structdecl name (get_scope ()) with
   | Some id ->
-      update_program id (StructDef (name, decl));
+      update_program id (StructDef (name, lparams, decl));
       TsStructDef id
   | None -> (
       match lookup_structdef name (get_scope ()) with
       | Some _ -> failwith "redifinition of struct"
-      | None -> TsStructDef (push_def (StructDef (name, decl))))
+      | None -> TsStructDef (push_def (StructDef (name, lparams, decl))))
 
-let make_uniondef name decl =
+let make_uniondef name lparams decl =
   match lookup_uniondecl name (get_scope ()) with
   | Some id ->
-      update_program id (UnionDef (name, decl));
+      update_program id (UnionDef (name, lparams, decl));
       TsUnionDef id
   | None -> (
       match lookup_uniondef name (get_scope ()) with
       | Some _ -> failwith "redifinition of struct"
-      | None -> TsUnionDef (push_def (UnionDef (name, decl))))
+      | None -> TsUnionDef (push_def (UnionDef (name, lparams, decl))))
 
 let is_decl name = function
   | (Decl (n, _) | GDecl (n, _) | LDecl (_, (n, _))) when n = name -> true
@@ -172,7 +175,7 @@ let get_depth name =
   match lookup_depth name with
   | Some id -> (
       match List.nth (List.rev !program) id with
-      | Block (name, depth) -> Depth (name, depth)
+      | Block (name, depth) -> (name, depth)
       | _ -> failwith "get_depth")
   | None -> failwith "get_depth"
 
