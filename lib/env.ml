@@ -138,7 +138,7 @@ let make_uniondef name lparams decl =
       | None -> TsUnionDef (push_def (UnionDef (name, lparams, decl))))
 
 let is_decl name = function
-  | (Decl (n, _) | GDecl (n, _) | LDecl (_, (n, _))) when n = name -> true
+  | (Decl (n, _) | GDecl (n, _)) when n = name -> true
   | _ -> false
 
 let lookup_decl name l = find_item (is_decl name) l

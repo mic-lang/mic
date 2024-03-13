@@ -298,15 +298,15 @@ struct_or_union_spec:
 
 ldecl:
 | lifetime_declaration STRUCT ident? "{" list(struct_decl) "}" enter_scope_first leave_scope_last                         
-{ [push_def (LDecl ($1, make_decl (TDeclSpec [make_structdef
+                                            { make_structdef
                                               (conv_ident $3)
                                               $1
-                                              (List.flatten $5)]) (DeclIdent "")))] }
+                                              (List.flatten $5) }
 | lifetime_declaration UNION ident? "{" list(struct_decl) "}" enter_scope_first leave_scope_last                         
-{ [push_def (LDecl ($1, make_decl (TDeclSpec [make_uniondef
+                                            { make_uniondef
                                               (conv_ident $3)
                                               $1
-                                              (List.flatten $5)]) (DeclIdent "")))] }
+                                              (List.flatten $5) }
 
 struct_decl:
 | spec_qual_list struct_declarator_list? ";"
@@ -510,7 +510,7 @@ jump_stmt:
 external_decl:
 | function_def                            { [push_def $1] }
 | gdecl ";"                               { $1 }
-| ldecl ";"                               { $1 }
+| ldecl ";"                               { [] }
 | ";"                                     { [] }
 
 function_def:

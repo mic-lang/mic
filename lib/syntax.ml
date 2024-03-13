@@ -44,7 +44,6 @@ type 'expr item =
   | Kind of string
   | Decl of 'expr decl
   | GDecl of 'expr decl
-  | LDecl of lparam list * 'expr decl
   | StructDecl of string
   | UnionDecl of string
   | EnumDecl of string

@@ -107,7 +107,6 @@ and gen_expr = function
       match List.nth (List.rev !Env.program) id with
       | Decl (name, _)
       | GDecl (name, _)
-      | LDecl (_, (name, _))
       | VarDef ((name, _), _)
       | GVarDef ((name, _), _)
       | FunctionDef ((name, _), _) ->
@@ -202,7 +201,6 @@ and gen_item = function
 
 and gen_item_global = function
   | GDecl (name, ty) -> gen_decl name ty ^ ";" ^ "\n"
-  | LDecl (_, (name, ty)) -> gen_decl name ty ^ ";" ^ "\n"
   | GVarDef ((name, ty), init) ->
       gen_decl name ty ^ " = " ^ gen_init init ^ ";" ^ "\n"
   | FunctionDef ((name, ty), stmt) ->
