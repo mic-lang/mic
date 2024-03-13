@@ -53,6 +53,7 @@ let rec gen_declspec = function
 and gen_declspecs l = String.concat " " (List.map (fun ds -> gen_declspec ds) l)
 
 and gen_decl str = function
+  | TVar ty -> gen_decl str ty
   | TPtr { pointee_ty = (TArr _ | TFun _) as ty; _ } ->
       gen_decl ("(" ^ "*" ^ str ^ ")") ty
   | TPtr { pointee_ty = ty; _ } -> gen_decl ("*" ^ str) ty
@@ -88,6 +89,8 @@ and gen_binop = function
   | Comma -> ","
 
 and gen_unop = function
+  | Inc -> "++"
+  | Dec -> "--"
   | Plus -> "+"
   | Minus -> "-"
   | BitNot -> "~"

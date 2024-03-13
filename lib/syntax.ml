@@ -36,7 +36,7 @@ type binary =
   | Comma
 [@@deriving show]
 
-type unary = Plus | Minus | BitNot | LogNot | Ref | Deref | Sizeof
+type unary = Inc | Dec | Plus | Minus | BitNot | LogNot | Ref | Deref | Sizeof
 [@@deriving show]
 
 type 'expr item =
@@ -115,6 +115,7 @@ and 'expr stmt =
 [@@deriving show]
 
 and 'expr ty =
+  | TVar of 'expr ty
   | TFun of 'expr ty * 'expr decl list
   | TPtr of 'expr pointer
   | TArr of 'expr ty * 'expr
@@ -163,7 +164,8 @@ and 'expr pointer = {
 and qualifier = Const | Volatile | Drop
 
 let rec get_declspec = function
-  | TFun (ty, _) | TPtr { pointee_ty = ty; _ } | TArr (ty, _) -> get_declspec ty
+  | TVar ty | TFun (ty, _) | TPtr { pointee_ty = ty; _ } | TArr (ty, _) ->
+      get_declspec ty
   | TDeclSpec l -> l
 
 let get_base_ty = function

@@ -113,8 +113,8 @@ argument_expr_list:
 
 unary_expr:
 | postfix_expr                            { $1 }
-| "++" unary_expr                         { EUnary(Plus,$2) }
-| "--" unary_expr                         { EUnary(Minus,$2) }
+| "++" unary_expr                         { EUnary(Inc,$2) }
+| "--" unary_expr                         { EUnary(Dec,$2) }
 | "&" cast_expr                           { EUnary(Ref,$2) }
 | "*" cast_expr                           { EUnary(Deref,$2) }
 | "+" cast_expr                           { EUnary(Plus,$2) }

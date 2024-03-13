@@ -26,7 +26,7 @@ int main () using p {
 label : 
     for (int i=0;i<5;i++) using q {
         printf("%d");
-        if (i==4)
+        if (++i==4)
         break;
         if (i<5)continue;
     }

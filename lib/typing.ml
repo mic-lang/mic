@@ -33,6 +33,7 @@ let get_expr_ty = function
 let rec type_conv =
   let open Syntax in
   function
+  | TVar ty -> type_conv ty
   | TFun (ty, decl) ->
       TPtr
         {
@@ -138,7 +139,8 @@ let rec type_expr = function
   | Syntax.EAssign (bin, lhs, rhs) ->
       let lhs = type_expr lhs in
       EAssign (get_expr_ty lhs, bin, lhs, type_expr rhs)
-  | Syntax.EUnary (((Plus | Minus | BitNot | LogNot) as un), expr) ->
+  | Syntax.EUnary (((Inc | Dec | Plus | Minus | BitNot | LogNot) as un), expr)
+    ->
       let expr = type_expr expr in
       EUnary (get_expr_ty expr, un, expr)
   | Syntax.EUnary (Ref, expr) ->
