@@ -185,7 +185,9 @@ let rec type_expr = function
   | Syntax.EPostfix (expr, PIdx idx) ->
       let expr = type_expr expr in
       EPostfix
-        (Syntax.get_base_ty (get_expr_ty expr), expr, PIdx (type_expr idx))
+        ( TVar (type_conv (Syntax.get_base_ty (get_expr_ty expr))),
+          expr,
+          PIdx (type_expr idx) )
   | Syntax.EPostfix (expr, PDot name) -> (
       let expr = type_expr expr in
       match get_expr_ty expr with

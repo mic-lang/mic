@@ -26,6 +26,8 @@ int main () using p {
     *&*(b->a);
     //&5;
     func<>;
+    int c[4];
+    &c[3];
 label : 
     for (int i=0;i<5;i++) using q {
         (**************printf)("%d");
