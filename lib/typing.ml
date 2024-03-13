@@ -157,7 +157,7 @@ let rec type_expr = function
           expr )
   | Syntax.EUnary (Deref, expr) ->
       let expr = type_expr expr in
-      EUnary (type_conv (Syntax.get_base_ty (get_expr_ty expr)), Deref, expr)
+      EUnary (Syntax.get_base_ty (get_expr_ty expr), Deref, expr)
   | Syntax.EUnary (Sizeof, expr) ->
       EUnary (TDeclSpec [ TsInt ], Sizeof, type_expr expr)
   | Syntax.ESizeof ty -> ESizeof (TDeclSpec [ TsInt ], type_conv ty)

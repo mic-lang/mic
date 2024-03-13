@@ -22,6 +22,7 @@ int main () using p {
     goto label;
     struct Y p* a;
     struct Y{int a;} p auto* b;
+    &*&**printf;
     func<>;
 label : 
     for (int i=0;i<5;i++) using q {
