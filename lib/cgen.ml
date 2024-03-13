@@ -122,7 +122,7 @@ and gen_expr = function
       "(" ^ gen_expr lhs ^ " " ^ "=" ^ " " ^ gen_expr rhs ^ ")"
   | EAssign (Some bin, lhs, rhs) ->
       "(" ^ gen_expr lhs ^ " " ^ gen_binop bin ^ "=" ^ " " ^ gen_expr rhs ^ ")"
-  | EUnary (un, expr) -> gen_unop un ^ gen_expr expr
+  | EUnary (un, expr) -> "(" ^ gen_unop un ^ gen_expr expr ^ ")"
   | ESizeof ty -> "sizeof " ^ gen_decl "" ty
   | EPostfix (expr, postfix) -> gen_expr expr ^ gen_postfix postfix
   | ECond (cond, lhs, rhs) ->

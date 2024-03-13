@@ -33,7 +33,7 @@ let get_expr_ty = function
 let rec type_conv =
   let open Syntax in
   function
-  | TVar ty -> type_conv ty
+  | TVar ty -> TVar (type_conv ty)
   | TFun (ty, decl) ->
       TPtr
         {
@@ -120,22 +120,29 @@ let rec type_expr = function
       | _ -> EConst (Syntax.TDeclSpec [ TsInt ], v))
   | Syntax.EVar id -> (
       match List.nth (List.rev !Env.program) id with
-      | Decl decl | VarDef (decl, _) | FunctionDef (decl, _) ->
-          EVar (type_conv (snd decl), id)
-      | item -> failwith ("type_expr" ^ Syntax.show_item_ item))
+      | Decl decl
+      | GDecl decl
+      | VarDef (decl, _)
+      | GVarDef (decl, _)
+      | FunctionDef (decl, _)
+      | LFunctionDef (_, decl, _) ->
+          print_endline (fst decl);
+          EVar (TVar (type_conv (snd decl)), id)
+      | item -> failwith ("type_expr: var " ^ Syntax.show_item_ item))
   | Syntax.EBinary
       ( (( Add | Sub | Mul | Div | Mod | LShift | RShift | BitAnd | BitXor
          | BitOr ) as bin),
         lhs,
         rhs ) ->
       let lhs = type_expr lhs in
-      EBinary (get_expr_ty lhs, bin, lhs, type_expr rhs)
+      EBinary (Syntax.get_contents_ty (get_expr_ty lhs), bin, lhs, type_expr rhs)
   | Syntax.EBinary
       (((LogAnd | LogOr | Lt | Le | Gt | Ge | Eq | Ne) as bin), lhs, rhs) ->
       EBinary (TDeclSpec [ TsInt ], bin, type_expr lhs, type_expr rhs)
   | Syntax.EBinary (Comma, lhs, rhs) ->
       let rhs = type_expr rhs in
-      EBinary (get_expr_ty rhs, Comma, type_expr lhs, rhs)
+      EBinary
+        (Syntax.get_contents_ty (get_expr_ty rhs), Comma, type_expr lhs, rhs)
   | Syntax.EAssign (bin, lhs, rhs) ->
       let lhs = type_expr lhs in
       EAssign (get_expr_ty lhs, bin, lhs, type_expr rhs)
@@ -143,21 +150,27 @@ let rec type_expr = function
     ->
       let expr = type_expr expr in
       EUnary (get_expr_ty expr, un, expr)
-  | Syntax.EUnary (Ref, expr) ->
+  | Syntax.EUnary (Ref, expr) -> (
       let expr = type_expr expr in
-      EUnary
-        ( TPtr
-            {
-              pointee_ty = get_expr_ty expr;
-              pointee_depth = Global;
-              pointee_kind = Static;
-              pointee_qual = [ Const ];
-            },
-          Ref,
-          expr )
-  | Syntax.EUnary (Deref, expr) ->
+      match get_expr_ty expr with
+      | TVar ty ->
+          EUnary
+            ( TVar
+                (TPtr
+                   {
+                     pointee_ty = ty;
+                     pointee_depth = Global;
+                     pointee_kind = Static;
+                     pointee_qual = [ Const ];
+                   }),
+              Ref,
+              expr )
+      | _ -> failwith "not lvalue")
+  | Syntax.EUnary (Deref, expr) -> (
       let expr = type_expr expr in
-      EUnary (Syntax.get_base_ty (get_expr_ty expr), Deref, expr)
+      match get_expr_ty expr with
+      | TVar ty -> EUnary (TVar (type_conv (Syntax.get_base_ty ty)), Deref, expr)
+      | ty -> failwith ("type_expr : deref " ^ show_ty ty))
   | Syntax.EUnary (Sizeof, expr) ->
       EUnary (TDeclSpec [ TsInt ], Sizeof, type_expr expr)
   | Syntax.ESizeof ty -> ESizeof (TDeclSpec [ TsInt ], type_conv ty)
@@ -176,21 +189,46 @@ let rec type_expr = function
   | Syntax.EPostfix (expr, PDot name) -> (
       let expr = type_expr expr in
       match get_expr_ty expr with
-      | TDeclSpec [ (TsStruct (id, _) | TsUnion (id, _)) ] -> (
+      | TDeclSpec
+          [
+            (TsStruct (id, _) | TsUnion (id, _) | TsStructDef id | TsUnionDef id);
+          ]
+      | TVar
+          (TDeclSpec
+            [
+              ( TsStruct (id, _)
+              | TsUnion (id, _)
+              | TsStructDef id
+              | TsUnionDef id );
+            ]) -> (
           match List.nth (List.rev !Env.program) id with
           | StructDef (_, _, mems) | UnionDef (_, _, mems) ->
-              EPostfix (type_conv (List.assoc name mems), expr, PDot name)
+              EPostfix (TVar (type_conv (List.assoc name mems)), expr, PDot name)
           | _ -> failwith "type_expr: dot")
       | _ -> failwith "type_expr: dot")
   | Syntax.EPostfix (expr, PArrow name) -> (
       let expr = type_expr expr in
       match Syntax.get_base_ty (get_expr_ty expr) with
-      | TDeclSpec [ (TsStruct (id, _) | TsUnion (id, _)) ] -> (
+      | TDeclSpec
+          [
+            (TsStruct (id, _) | TsUnion (id, _) | TsStructDef id | TsUnionDef id);
+          ]
+      | TVar
+          (TDeclSpec
+            [
+              ( TsStruct (id, _)
+              | TsUnion (id, _)
+              | TsStructDef id
+              | TsUnionDef id );
+            ]) -> (
           match List.nth (List.rev !Env.program) id with
           | StructDef (_, _, mems) | UnionDef (_, _, mems) ->
-              EPostfix (type_conv (List.assoc name mems), expr, PArrow name)
+              EPostfix
+                (TVar (type_conv (List.assoc name mems)), expr, PArrow name)
           | _ -> failwith "type_expr: arrow")
-      | _ -> failwith "type_expr: arrow")
+      | _ ->
+          print_endline (show_ty (Syntax.get_base_ty (get_expr_ty expr)));
+          failwith "type_expr: arrow a")
   | Syntax.EPostfix (expr, (PInc | PDec)) -> type_expr expr
   | Syntax.ECond (_, lhs, _) -> type_expr lhs
   | Syntax.ECast (ty, expr) -> ECast (type_conv ty, type_expr expr)

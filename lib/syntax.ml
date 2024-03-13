@@ -170,4 +170,7 @@ let rec get_declspec = function
 
 let get_base_ty = function
   | TPtr { pointee_ty = ty; _ } | TArr (ty, _) -> ty
+  | TVar (TPtr { pointee_ty = ty; _ }) | TVar (TArr (ty, _)) -> ty
   | _ -> failwith "get_base_ty"
+
+let get_contents_ty = function TVar ty | ty -> ty

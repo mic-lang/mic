@@ -21,12 +21,14 @@ int main () using p {
     struct X<p, dyn> *const b = func<p, dyn>((struct X){.x=0});
     goto label;
     struct Y p* a;
-    struct Y{int a;} p auto* b;
-    &*&**printf;
+    struct Y{int p* a;} p auto* b;
+    *******printf;
+    *&*(b->a);
+    //&5;
     func<>;
 label : 
     for (int i=0;i<5;i++) using q {
-        printf("%d");
+        (**************printf)("%d");
         if (++i==4)
         break;
         if (i<5)continue;
