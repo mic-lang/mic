@@ -231,8 +231,17 @@ let rec type_expr = function
       | _ ->
           print_endline (show_ty (Syntax.get_base_ty (get_expr_ty expr)));
           failwith "type_expr: arrow a")
-  | Syntax.EPostfix (expr, (PInc | PDec)) -> type_expr expr
-  | Syntax.ECond (_, lhs, _) -> type_expr lhs
+  | Syntax.EPostfix (expr, ((PInc | PDec) as postfix)) ->
+      EPostfix
+        ( Syntax.get_contents_ty (get_expr_ty (type_expr expr)),
+          type_expr expr,
+          postfix )
+  | Syntax.ECond (cond, lhs, rhs) ->
+      ECond
+        ( Syntax.get_contents_ty (get_expr_ty (type_expr lhs)),
+          type_expr cond,
+          type_expr lhs,
+          type_expr rhs )
   | Syntax.ECast (ty, expr) -> ECast (type_conv ty, type_expr expr)
   | Syntax.ECompoundLit (ty, init) ->
       ECompoundLit (type_conv ty, type_init (type_conv ty) init)
