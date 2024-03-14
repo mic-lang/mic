@@ -121,8 +121,10 @@ let rec type_conv =
 
 let used_var_type env = function
   | Syntax.TVar { ownership = { contents = Moved depth } as ownership; _ } ->
-      if List.mem depth env then ownership := Has
-      else failwith "used var dropped before"
+      if List.mem depth env then (
+        print_endline (Syntax.show_depths env);
+        failwith "used var dropped before")
+      else ownership := Has
   | _ -> ()
 
 let rec type_expr env = function
@@ -143,31 +145,35 @@ let rec type_expr env = function
       match List.nth (List.rev !Env.program) id with
       | Decl (decl, depth, ownership) | VarDef (decl, _, depth, ownership) ->
           print_endline (fst decl);
-          EVar
-            ( TVar
-                {
-                  ownership;
-                  var_ty = type_conv (snd decl);
-                  var_depth = depth;
-                  var_kind = Auto;
-                  var_qual = [];
-                },
-              id )
+          let ty =
+            Syntax.TVar
+              {
+                ownership;
+                var_ty = type_conv (snd decl);
+                var_depth = depth;
+                var_kind = Auto;
+                var_qual = [];
+              }
+          in
+          used_var_type env ty;
+          EVar (ty, id)
       | GDecl decl
       | GVarDef (decl, _)
       | FunctionDef (decl, _)
       | LFunctionDef (_, decl, _) ->
           print_endline (fst decl);
-          EVar
-            ( TVar
-                {
-                  ownership = ref Syntax.Has;
-                  var_ty = type_conv (snd decl);
-                  var_depth = Global;
-                  var_kind = Static;
-                  var_qual = [];
-                },
-              id )
+          let ty =
+            Syntax.TVar
+              {
+                ownership = ref Syntax.Has;
+                var_ty = type_conv (snd decl);
+                var_depth = Global;
+                var_kind = Static;
+                var_qual = [];
+              }
+          in
+          used_var_type env ty;
+          EVar (ty, id)
       | item -> failwith ("type_expr env: var " ^ Syntax.show_item_ item))
   | Syntax.EBinary
       ( (( Add | Sub | Mul | Div | Mod | LShift | RShift | BitAnd | BitXor
@@ -189,7 +195,8 @@ let rec type_expr env = function
       let rhs = type_expr env rhs in
       (match (get_expr_ty lhs, get_expr_ty rhs) with
       | TVar { var_depth = depth; _ }, TVar { ownership; _ } ->
-          ownership := Moved depth
+          ownership := Moved depth;
+          print_endline ("ownership:" ^ show_ty (get_expr_ty rhs))
       | _ -> ());
       EAssign (get_expr_ty lhs, bin, lhs, rhs)
   | Syntax.EUnary (((Inc | Dec | Plus | Minus | BitNot | LogNot) as un), expr)

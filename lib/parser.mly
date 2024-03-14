@@ -469,7 +469,7 @@ using_depth:
 | USING ident                             { ignore (push_def (Block ($2, get_curr_depth ()))); ($2, get_curr_depth ()) }
 
 no_depth:
-|                                         { ("", get_curr_depth ()) }
+|                                         { ignore (push_def (Block ("", get_curr_depth ())));("", get_curr_depth ()) }
 
 compound_stmt:
 | enter_scope  no_depth "{" list(item) "}" leave_scope

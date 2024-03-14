@@ -18,15 +18,24 @@ extern int printf(const char *, ...);
 
 int main () using p {
     func<>;;
-    struct X<p, dyn> *const b = func<p, dyn>((struct X){.x=0});
+    //struct X<p, dyn> *const b = func<p, dyn>((struct X){.x=0});
     goto label;
-    struct Y p* a;
-    struct Y{int p* a;} p auto* b;
-    *&*&(b->a);
+    //struct Y p* a;
+    //struct Y{int p* a;} p auto* b;
+    int a;
+    {
+        int b;
+        b = a;
+        a;
+    }
+    a;
+    //*&*&(b->a);
     //&5;
     func<>;
     int c[4];
-    &c[3];
+    //a = c[3];
+    //c;
+
 label : 
     for (int i=0;i<5;i++) using q {
         (*printf)("%d");

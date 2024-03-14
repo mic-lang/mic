@@ -186,7 +186,7 @@ let lookup_last_depth () =
     | (_, Block (name, depth)) :: _ -> Depth (name, depth)
     | _ :: xs -> find_depth xs
   in
-  find_depth (if !in_lparams then get_lscope () else get_stack ())
+  find_depth (List.rev (if !in_lparams then get_lscope () else get_stack ()))
 
 let is_kind name = function Kind n when n = name -> true | _ -> false
 let lookup_kind name l = find_item (is_kind name) l

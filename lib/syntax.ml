@@ -150,9 +150,10 @@ and ds =
   | FsNoreturn
 [@@deriving show]
 
-and depth = Depth of string * int | Global | Decayed
-and kind = Auto | Dyn | Static | User of string | Unknown
-and lparam = LBlock of string * int | LKind of kind
+and depth = Depth of string * int | Global | Decayed [@@deriving show]
+and kind = Auto | Dyn | Static | User of string | Unknown [@@deriving show]
+and lparam = LBlock of string * int | LKind of kind [@@deriving show]
+and depths = depth list [@@deriving show]
 
 and 'expr pointer = {
   pointee_ty : 'expr ty;
@@ -160,6 +161,7 @@ and 'expr pointer = {
   pointee_kind : kind;
   pointee_qual : qualifier list;
 }
+[@@deriving show]
 
 and 'expr var = {
   ownership : ownership ref;
@@ -168,9 +170,10 @@ and 'expr var = {
   var_kind : kind;
   var_qual : qualifier list;
 }
+[@@deriving show]
 
-and qualifier = Const | Volatile | Drop
-and ownership = Has | Moved of depth | Dropped
+and qualifier = Const | Volatile | Drop [@@deriving show]
+and ownership = Has | Moved of depth | Dropped [@@deriving show]
 
 let rec get_declspec = function
   | TVar { var_ty = ty; _ }
