@@ -120,9 +120,9 @@ let rec type_expr = function
       | _ -> EConst (Syntax.TDeclSpec [ TsInt ], v))
   | Syntax.EVar id -> (
       match List.nth (List.rev !Env.program) id with
-      | Decl decl
+      | Decl (decl, _)
       | GDecl decl
-      | VarDef (decl, _)
+      | VarDef (decl, _, _)
       | GVarDef (decl, _)
       | FunctionDef (decl, _)
       | LFunctionDef (_, decl, _) ->
@@ -341,13 +341,13 @@ let rec type_program =
   | [] -> []
   | Block (d, n) :: xs -> Block (d, n) :: type_program xs
   | Kind n :: xs -> Kind n :: type_program xs
-  | Decl (n, ty) :: xs -> Decl (n, type_conv ty) :: type_program xs
+  | Decl ((n, ty), d) :: xs -> Decl ((n, type_conv ty), d) :: type_program xs
   | GDecl (n, ty) :: xs -> GDecl (n, type_conv ty) :: type_program xs
   | StructDecl n :: xs -> StructDecl n :: type_program xs
   | UnionDecl n :: xs -> UnionDecl n :: type_program xs
   | EnumDecl n :: xs -> EnumDecl n :: type_program xs
-  | VarDef ((n, ty), init) :: xs ->
-      VarDef ((n, type_conv ty), type_init (type_conv ty) init)
+  | VarDef ((n, ty), init, d) :: xs ->
+      VarDef ((n, type_conv ty), type_init (type_conv ty) init, d)
       :: type_program xs
   | GVarDef ((n, ty), init) :: xs ->
       GVarDef ((n, type_conv ty), type_init (type_conv ty) init)

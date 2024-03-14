@@ -26,10 +26,10 @@ let make_decl ty d =
 let make_decls ty dl =
   List.map (fun d -> make_decl ty d) dl
 
-let make_decls_with_init ty init_decl_list =
+let make_decls_with_init ty init_decl_list depth =
   List.map (function 
-    | (d,Some init) -> push_def (VarDef(make_decl ty d,init))
-    | (d,None) -> push_def (Decl (make_decl ty d))
+    | (d,Some init) -> push_def (VarDef(make_decl ty d,init, depth))
+    | (d,None) -> push_def (Decl (make_decl ty d, depth))
   ) init_decl_list
 
 let make_gdecls_with_init ty init_decl_list =
@@ -213,8 +213,8 @@ lparam:
 | KIND ident                              { ignore(push_lparam (Kind $2)); LKind (User $2) }
 
 decl:
-| decl_specs                          { [push_def (Decl (make_decl $1 (DeclIdent "")))] }
-| decl_specs enter_scope init_declarator_list leave_scope    { make_decls_with_init $1 $3 }
+| decl_specs                          { make_decls_with_init $1 [((DeclIdent ""), None)] (lookup_last_depth ()) }
+| decl_specs enter_scope init_declarator_list leave_scope    { make_decls_with_init $1 $3 (lookup_last_depth ()) }
 
 gdecl:
 | decl_specs                          { [push_def (GDecl (make_decl $1 (DeclIdent "")))] }
