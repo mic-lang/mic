@@ -1,6 +1,6 @@
 type expr =
   | EConst of expr Syntax.ty * Syntax.value
-  | EVar of expr Syntax.ty * Syntax.id
+  | EVar of expr Syntax.ty * Syntax.id * Syntax.lparam list
   | EBinary of expr Syntax.ty * Syntax.binary * expr * expr
   | EAssign of expr Syntax.ty * Syntax.binary option * expr * expr
   | EUnary of expr Syntax.ty * Syntax.unary * expr
@@ -19,7 +19,7 @@ let program : typed_program ref = ref []
 
 let get_expr_ty = function
   | EConst (ty, _)
-  | EVar (ty, _)
+  | EVar (ty, _, _)
   | EBinary (ty, _, _, _)
   | EAssign (ty, _, _, _)
   | EUnary (ty, _, _)
@@ -127,6 +127,99 @@ let used_var_type env = function
       else ownership := Has
   | _ -> ()
 
+let rec unify lparams largs =
+  let open Syntax in
+  match (lparams, largs) with
+  | LBlock (Depth (name, _)) :: xs, LKind Static :: ys ->
+      (name, LBlock Global) :: unify xs ys
+  | LBlock (Depth (name, _)) :: xs, LBlock blk :: ys ->
+      (name, LBlock blk) :: unify xs ys
+  | LKind (User name) :: xs, LKind kind :: ys ->
+      (name, LKind kind) :: unify xs ys
+  | LBlock _ :: _, LKind _ :: _ | LKind _ :: _, LBlock _ :: _ ->
+      failwith "the lifetime parameter mismatch"
+  | _ :: xs, _ :: ys -> unify xs ys
+  | _ :: _, [] | [], _ :: _ ->
+      failwith "the length of lifetime parameter is incorrect"
+  | [], [] -> []
+
+let apply_depth subst =
+  let open Syntax in
+  function
+  | Syntax.Depth (name, _) when List.mem_assoc name subst -> (
+      match List.assoc name subst with
+      | LBlock blk -> blk
+      | _ -> failwith "apply_kind")
+  | depth -> depth
+
+let apply_kind subst =
+  let open Syntax in
+  function
+  | User name when List.mem_assoc name subst -> (
+      match List.assoc name subst with
+      | LKind kind -> kind
+      | _ -> failwith "apply_kind")
+  | kind -> kind
+
+let apply_lparams subst =
+  let open Syntax in
+  function
+  | LBlock blk -> LBlock (apply_depth subst blk)
+  | LKind kind -> LKind (apply_kind subst kind)
+
+let rec apply subst =
+  let open Syntax in
+  function
+  | TVar
+      {
+        ownership;
+        var_ty = ty;
+        var_depth = depth;
+        var_kind = kind;
+        var_qual = qual;
+      } ->
+      TVar
+        {
+          ownership;
+          var_ty = apply subst ty;
+          var_depth = apply_depth subst depth;
+          var_kind = apply_kind subst kind;
+          var_qual = qual;
+        }
+  | TFun (ty, params) ->
+      TFun (apply subst ty, List.map (fun (n, ty) -> (n, apply subst ty)) params)
+  | TPtr
+      {
+        pointee_ty = ty;
+        pointee_depth = depth;
+        pointee_kind = kind;
+        pointee_qual = qual;
+      } ->
+      TPtr
+        {
+          pointee_ty = apply subst ty;
+          pointee_depth = apply_depth subst depth;
+          pointee_kind = apply_kind subst kind;
+          pointee_qual = qual;
+        }
+  | TArr (ty, _) ->
+      TPtr
+        {
+          pointee_ty = apply subst ty;
+          pointee_depth = Decayed;
+          pointee_kind = Unknown;
+          pointee_qual = [ Const ];
+        }
+  | TDeclSpec l ->
+      let f = function
+        | TsStruct (id, lparams) ->
+            TsStruct (id, List.map (apply_lparams subst) lparams)
+        | TsUnion (id, lparams) ->
+            TsUnion (id, List.map (apply_lparams subst) lparams)
+        | ds -> ds
+      in
+      TDeclSpec (List.map f l)
+
 let rec type_expr env = function
   | Syntax.EConst v -> (
       match v with
@@ -141,7 +234,7 @@ let rec type_expr env = function
                 },
               v )
       | _ -> EConst (Syntax.TDeclSpec [ TsInt ], v))
-  | Syntax.EVar id -> (
+  | Syntax.EVar (id, largs) -> (
       match List.nth (List.rev !Env.program) id with
       | Decl (decl, depth, ownership) | VarDef (decl, _, depth, ownership) ->
           print_endline (fst decl);
@@ -156,11 +249,8 @@ let rec type_expr env = function
               }
           in
           used_var_type env ty;
-          EVar (ty, id)
-      | GDecl decl
-      | GVarDef (decl, _)
-      | FunctionDef (decl, _)
-      | LFunctionDef (_, decl, _) ->
+          EVar (ty, id, [])
+      | GDecl decl | GVarDef (decl, _) | FunctionDef (decl, _) ->
           print_endline (fst decl);
           let ty =
             Syntax.TVar
@@ -173,7 +263,23 @@ let rec type_expr env = function
               }
           in
           used_var_type env ty;
-          EVar (ty, id)
+          EVar (ty, id, [])
+      | LFunctionDef (lparams, decl, _) ->
+          print_endline (fst decl);
+          let ty =
+            Syntax.TVar
+              {
+                ownership = ref Syntax.Has;
+                var_ty = type_conv (snd decl);
+                var_depth = Global;
+                var_kind = Static;
+                var_qual = [];
+              }
+          in
+          let subst = unify lparams largs in
+          let ty = apply subst ty in
+          used_var_type env ty;
+          EVar (ty, id, largs)
       | item -> failwith ("type_expr env: var " ^ Syntax.show_item_ item))
   | Syntax.EBinary
       ( (( Add | Sub | Mul | Div | Mod | LShift | RShift | BitAnd | BitXor

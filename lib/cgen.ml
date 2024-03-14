@@ -125,7 +125,7 @@ and gen_value = function
 
 and gen_expr = function
   | EConst v -> gen_value v
-  | EVar id -> (
+  | EVar (id, _) -> (
       match List.nth (List.rev !Env.program) id with
       | Decl ((name, _), _, _)
       | GDecl (name, _)

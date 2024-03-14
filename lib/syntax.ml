@@ -67,7 +67,7 @@ and item_ = expr item [@@deriving show]
 
 and expr =
   | EConst of value
-  | EVar of id
+  | EVar of id * lparam list
   | EBinary of binary * expr * expr
   | EAssign of binary option * expr * expr
   | EUnary of unary * expr
@@ -154,7 +154,7 @@ and ds =
 
 and depth = Depth of string * int | Global | Decayed [@@deriving show]
 and kind = Auto | Dyn | Static | User of string | Unknown [@@deriving show]
-and lparam = LBlock of string * int | LKind of kind [@@deriving show]
+and lparam = LBlock of depth | LKind of kind [@@deriving show]
 and depths = depth list [@@deriving show]
 
 and 'expr pointer = {
@@ -192,6 +192,4 @@ let get_base_ty = function
 let get_contents_ty = function TVar { var_ty = ty; _ } | ty -> ty
 
 let filter_depth l =
-  List.filter_map
-    (function LBlock (name, depth) -> Some (Depth (name, depth)) | _ -> None)
-    l
+  List.filter_map (function LBlock depth -> Some depth | _ -> None) l

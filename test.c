@@ -18,7 +18,7 @@ struct X<static, dyn>* y;
 extern int printf(const char *, ...);
 
 int main () using p {
-    func<>;;
+    func<p,p,static>;;
     //struct X<p, dyn> *const b = func<p, dyn>((struct X){.x=0});
     goto label;
     //struct Y p* a;
@@ -26,7 +26,7 @@ int main () using p {
     struct Y{int p* a;} p auto* b = &a;
     //a;
     //&5;
-    func<>;
+    func<static,static,auto>;
     int c[4];
     //a = c[3];
     //c;

@@ -81,12 +81,12 @@ ident:
 | TYPE_ID                                 { $1 }
 
 larg:
-| DEPTH_ID                                { LBlock (fst (get_depth $1), snd (get_depth $1)) }
+| DEPTH_ID                                { LBlock (Depth (fst (get_depth $1), snd (get_depth $1))) }
 | depth_qualifer                          { LKind $1  }
 
 primary_expr:
-| ID                                      { EVar (lookup_var $1) }
-| LID LT separated_list(",", larg) GT     { EVar (lookup_var $1) }
+| ID                                      { EVar (lookup_var $1, []) }
+| LID LT separated_list(",", larg) GT     { EVar (lookup_var $1, $3) }
 | CHAR                                    { EConst (VChar $1) }
 | INT                                     { EConst (VInt $1) }
 | FLOAT                                   { EConst (VFloat $1) }
@@ -211,7 +211,7 @@ lifetime_declaration:
 lparam:
 | DEPTH ident                             
                                           { let depth = get_curr_depth () in
-                                            ignore(push_lparam_depth (Block ($2, depth))); LBlock ($2, depth) }
+                                            ignore(push_lparam_depth (Block ($2, depth))); LBlock (Depth ($2, depth)) }
 | KIND ident                              { ignore(push_lparam (Kind $2)); LKind (User $2) }
 
 decl:
