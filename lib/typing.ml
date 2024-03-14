@@ -33,7 +33,7 @@ let get_expr_ty = function
 let rec type_conv =
   let open Syntax in
   function
-  | TVar ty -> TVar (type_conv ty)
+  | TVar (ty, depth) -> TVar (type_conv ty, depth)
   | TFun (ty, decl) ->
       TPtr
         {
@@ -120,14 +120,15 @@ let rec type_expr = function
       | _ -> EConst (Syntax.TDeclSpec [ TsInt ], v))
   | Syntax.EVar id -> (
       match List.nth (List.rev !Env.program) id with
-      | Decl (decl, _)
+      | Decl (decl, depth) | VarDef (decl, _, depth) ->
+          print_endline (fst decl);
+          EVar (TVar (type_conv (snd decl), depth), id)
       | GDecl decl
-      | VarDef (decl, _, _)
       | GVarDef (decl, _)
       | FunctionDef (decl, _)
       | LFunctionDef (_, decl, _) ->
           print_endline (fst decl);
-          EVar (TVar (type_conv (snd decl)), id)
+          EVar (TVar (type_conv (snd decl), Global), id)
       | item -> failwith ("type_expr: var " ^ Syntax.show_item_ item))
   | Syntax.EBinary
       ( (( Add | Sub | Mul | Div | Mod | LShift | RShift | BitAnd | BitXor
@@ -153,23 +154,25 @@ let rec type_expr = function
   | Syntax.EUnary (Ref, expr) -> (
       let expr = type_expr expr in
       match get_expr_ty expr with
-      | TVar ty ->
+      | TVar (ty, depth) ->
           EUnary
             ( TVar
-                (TPtr
-                   {
-                     pointee_ty = ty;
-                     pointee_depth = Global;
-                     pointee_kind = Static;
-                     pointee_qual = [ Const ];
-                   }),
+                ( TPtr
+                    {
+                      pointee_ty = ty;
+                      pointee_depth = depth;
+                      pointee_kind = Static;
+                      pointee_qual = [ Const ];
+                    },
+                  depth ),
               Ref,
               expr )
       | _ -> failwith "not lvalue")
   | Syntax.EUnary (Deref, expr) -> (
       let expr = type_expr expr in
       match get_expr_ty expr with
-      | TVar ty -> EUnary (TVar (type_conv (Syntax.get_base_ty ty)), Deref, expr)
+      | TVar (ty, depth) ->
+          EUnary (TVar (type_conv (Syntax.get_base_ty ty), depth), Deref, expr)
       | ty -> failwith ("type_expr : deref " ^ show_ty ty))
   | Syntax.EUnary (Sizeof, expr) ->
       EUnary (TDeclSpec [ TsInt ], Sizeof, type_expr expr)
@@ -177,60 +180,64 @@ let rec type_expr = function
   | Syntax.EPostfix (expr, PCall params) -> (
       let expr = type_expr expr in
       let params = List.map type_expr params in
-      match Syntax.get_base_ty (type_conv (get_expr_ty expr)) with
+      match
+        Syntax.get_base_ty
+          (Syntax.get_contents_ty (type_conv (get_expr_ty expr)))
+      with
       | TFun (ret, _) -> EPostfix (ret, expr, PCall params)
       | _ ->
           print_endline (show_ty (type_conv (get_expr_ty expr)));
           failwith "type_expr")
-  | Syntax.EPostfix (expr, PIdx idx) ->
+  | Syntax.EPostfix (expr, PIdx idx) -> (
       let expr = type_expr expr in
-      EPostfix
-        ( TVar (type_conv (Syntax.get_base_ty (get_expr_ty expr))),
-          expr,
-          PIdx (type_expr idx) )
+      match get_expr_ty expr with
+      | TVar (ty, depth) ->
+          EPostfix
+            ( TVar (type_conv (Syntax.get_base_ty ty), depth),
+              expr,
+              PIdx (type_expr idx) )
+      | ty -> failwith ("type_expr : idx " ^ show_ty ty))
   | Syntax.EPostfix (expr, PDot name) -> (
       let expr = type_expr expr in
       match get_expr_ty expr with
-      | TDeclSpec
-          [
-            (TsStruct (id, _) | TsUnion (id, _) | TsStructDef id | TsUnionDef id);
-          ]
       | TVar
-          (TDeclSpec
-            [
-              ( TsStruct (id, _)
-              | TsUnion (id, _)
-              | TsStructDef id
-              | TsUnionDef id );
-            ]) -> (
+          ( TDeclSpec
+              [
+                ( TsStruct (id, _)
+                | TsUnion (id, _)
+                | TsStructDef id
+                | TsUnionDef id );
+              ],
+            depth ) -> (
           match List.nth (List.rev !Env.program) id with
           | StructDef (_, _, mems) | UnionDef (_, _, mems) ->
-              EPostfix (TVar (type_conv (List.assoc name mems)), expr, PDot name)
+              EPostfix
+                (TVar (type_conv (List.assoc name mems), depth), expr, PDot name)
           | _ -> failwith "type_expr: dot")
       | _ -> failwith "type_expr: dot")
   | Syntax.EPostfix (expr, PArrow name) -> (
       let expr = type_expr expr in
-      match Syntax.get_base_ty (get_expr_ty expr) with
-      | TDeclSpec
-          [
-            (TsStruct (id, _) | TsUnion (id, _) | TsStructDef id | TsUnionDef id);
-          ]
-      | TVar
-          (TDeclSpec
-            [
-              ( TsStruct (id, _)
-              | TsUnion (id, _)
-              | TsStructDef id
-              | TsUnionDef id );
-            ]) -> (
-          match List.nth (List.rev !Env.program) id with
-          | StructDef (_, _, mems) | UnionDef (_, _, mems) ->
-              EPostfix
-                (TVar (type_conv (List.assoc name mems)), expr, PArrow name)
-          | _ -> failwith "type_expr: arrow")
+      match get_expr_ty expr with
+      | TVar (ty, depth) -> (
+          match Syntax.get_base_ty ty with
+          | TDeclSpec
+              [
+                ( TsStruct (id, _)
+                | TsUnion (id, _)
+                | TsStructDef id
+                | TsUnionDef id );
+              ] -> (
+              match List.nth (List.rev !Env.program) id with
+              | StructDef (_, _, mems) | UnionDef (_, _, mems) ->
+                  EPostfix
+                    ( TVar (type_conv (List.assoc name mems), depth),
+                      expr,
+                      PArrow name )
+              | _ -> failwith "type_expr: arrow")
+          | _ -> failwith "type_expr: not a compound type")
       | _ ->
           print_endline (show_ty (Syntax.get_base_ty (get_expr_ty expr)));
-          failwith "type_expr: arrow a")
+          failwith "type_expr: arrow")
   | Syntax.EPostfix (expr, ((PInc | PDec) as postfix)) ->
       EPostfix
         ( Syntax.get_contents_ty (get_expr_ty (type_expr expr)),
