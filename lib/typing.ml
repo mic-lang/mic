@@ -33,9 +33,17 @@ let get_expr_ty = function
 let rec type_conv =
   let open Syntax in
   function
-  | TVar { var_ty = ty; var_depth = depth; var_kind = kind; var_qual = qual } ->
+  | TVar
+      {
+        ownership;
+        var_ty = ty;
+        var_depth = depth;
+        var_kind = kind;
+        var_qual = qual;
+      } ->
       TVar
         {
+          ownership;
           var_ty = type_conv ty;
           var_depth = depth;
           var_kind = kind;
@@ -132,6 +140,7 @@ let rec type_expr = function
           EVar
             ( TVar
                 {
+                  ownership = Has;
                   var_ty = type_conv (snd decl);
                   var_depth = depth;
                   var_kind = Auto;
@@ -146,6 +155,7 @@ let rec type_expr = function
           EVar
             ( TVar
                 {
+                  ownership = Has;
                   var_ty = type_conv (snd decl);
                   var_depth = Global;
                   var_kind = Static;
@@ -178,11 +188,17 @@ let rec type_expr = function
       let expr = type_expr expr in
       match get_expr_ty expr with
       | TVar
-          { var_ty = ty; var_depth = depth; var_kind = kind; var_qual = qual }
-        ->
+          {
+            ownership;
+            var_ty = ty;
+            var_depth = depth;
+            var_kind = kind;
+            var_qual = qual;
+          } ->
           EUnary
             ( TVar
                 {
+                  ownership;
                   var_ty =
                     TPtr
                       {
@@ -202,11 +218,17 @@ let rec type_expr = function
       let expr = type_expr expr in
       match get_expr_ty expr with
       | TVar
-          { var_ty = ty; var_depth = depth; var_kind = kind; var_qual = qual }
-        ->
+          {
+            ownership;
+            var_ty = ty;
+            var_depth = depth;
+            var_kind = kind;
+            var_qual = qual;
+          } ->
           EUnary
             ( TVar
                 {
+                  ownership;
                   var_ty = type_conv (Syntax.get_base_ty ty);
                   var_depth = depth;
                   var_kind = kind;
@@ -233,11 +255,17 @@ let rec type_expr = function
       let expr = type_expr expr in
       match get_expr_ty expr with
       | TVar
-          { var_ty = ty; var_depth = depth; var_kind = kind; var_qual = qual }
-        ->
+          {
+            ownership;
+            var_ty = ty;
+            var_depth = depth;
+            var_kind = kind;
+            var_qual = qual;
+          } ->
           EPostfix
             ( TVar
                 {
+                  ownership;
                   var_ty = type_conv (Syntax.get_base_ty ty);
                   var_depth = depth;
                   var_kind = kind;
@@ -251,6 +279,7 @@ let rec type_expr = function
       match get_expr_ty expr with
       | TVar
           {
+            ownership;
             var_ty =
               TDeclSpec
                 [
@@ -268,6 +297,7 @@ let rec type_expr = function
               EPostfix
                 ( TVar
                     {
+                      ownership;
                       var_ty = type_conv (List.assoc name mems);
                       var_depth = depth;
                       var_kind = kind;
@@ -281,8 +311,13 @@ let rec type_expr = function
       let expr = type_expr expr in
       match get_expr_ty expr with
       | TVar
-          { var_ty = ty; var_depth = depth; var_kind = kind; var_qual = qual }
-        -> (
+          {
+            ownership;
+            var_ty = ty;
+            var_depth = depth;
+            var_kind = kind;
+            var_qual = qual;
+          } -> (
           match Syntax.get_base_ty ty with
           | TDeclSpec
               [
@@ -296,6 +331,7 @@ let rec type_expr = function
                   EPostfix
                     ( TVar
                         {
+                          ownership;
                           var_ty = type_conv (List.assoc name mems);
                           var_depth = depth;
                           var_kind = kind;

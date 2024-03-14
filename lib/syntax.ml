@@ -162,6 +162,7 @@ and 'expr pointer = {
 }
 
 and 'expr var = {
+  mutable ownership : ownership;
   var_ty : 'expr ty;
   var_depth : depth;
   var_kind : kind;
@@ -169,6 +170,7 @@ and 'expr var = {
 }
 
 and qualifier = Const | Volatile | Drop
+and ownership = Has | Moved of depth | Dropped
 
 let rec get_declspec = function
   | TVar { var_ty = ty; _ }
