@@ -275,7 +275,6 @@ spec_qual_list_sub:
 type_qual:
 | CONST                                   { TqConst }
 | VOLATILE                                { TqVolatile }
-| DROP                                    { TqConst }
 
 function_spec:
 | INLINE                                  { FsInline }

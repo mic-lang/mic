@@ -52,11 +52,21 @@ let rec gen_declspec = function
 
 and gen_declspecs l = String.concat " " (List.map (fun ds -> gen_declspec ds) l)
 
+and gen_type_qual = function
+  | Const -> "const"
+  | Volatile -> "volatile"
+  | Drop -> ""
+
+and gen_type_quals l =
+  let str = String.concat " " (List.map (fun tq -> gen_type_qual tq) l) in
+  if str = "" then "" else str ^ " "
+
 and gen_decl str = function
   | TVar (ty, _, _) -> gen_decl str ty
-  | TPtr { pointee_ty = (TArr _ | TFun _) as ty; _ } ->
-      gen_decl ("(" ^ "*" ^ str ^ ")") ty
-  | TPtr { pointee_ty = ty; _ } -> gen_decl ("*" ^ str) ty
+  | TPtr { pointee_ty = (TArr _ | TFun _) as ty; pointee_qual = quals; _ } ->
+      gen_decl ("(" ^ "*" ^ gen_type_quals quals ^ str ^ ")") ty
+  | TPtr { pointee_ty = ty; pointee_qual = quals; _ } ->
+      gen_decl ("*" ^ gen_type_quals quals ^ str) ty
   | TArr (ty, expr) -> gen_decl (str ^ "[" ^ gen_expr expr ^ "]") ty
   | TFun (ty, l) -> gen_decl (str ^ "(" ^ gen_params l ^ ")") ty
   | TDeclSpec l -> gen_declspecs l ^ if str = "" then "" else " " ^ str
