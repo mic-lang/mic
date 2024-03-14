@@ -13,5 +13,9 @@ let () =
     print_endline
       (Mic.Syntax.show_programi
          (List.mapi (fun i x -> (i, x)) (List.rev !Mic.Env.program)));
-    ignore (Mic.Typing.type_program (List.rev !Mic.Env.program));
+    print_endline
+      (Mic.Typing.show_typed_programi
+         (List.mapi
+            (fun i x -> (i, x))
+            (Mic.Typing.type_program (List.rev !Mic.Env.program))));
     print_endline (Mic.Cgen.gen_program (List.rev !Mic.Env.program))

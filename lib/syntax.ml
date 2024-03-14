@@ -115,7 +115,7 @@ and 'expr stmt =
 [@@deriving show]
 
 and 'expr ty =
-  | TVar of 'expr ty * depth
+  | TVar of 'expr ty * depth * kind
   | TFun of 'expr ty * 'expr decl list
   | TPtr of 'expr pointer
   | TArr of 'expr ty * 'expr
@@ -164,7 +164,8 @@ and 'expr pointer = {
 and qualifier = Const | Volatile | Drop
 
 let rec get_declspec = function
-  | TVar (ty, _) | TFun (ty, _) | TPtr { pointee_ty = ty; _ } | TArr (ty, _) ->
+  | TVar (ty, _, _) | TFun (ty, _) | TPtr { pointee_ty = ty; _ } | TArr (ty, _)
+    ->
       get_declspec ty
   | TDeclSpec l -> l
 
@@ -172,4 +173,4 @@ let get_base_ty = function
   | TPtr { pointee_ty = ty; _ } | TArr (ty, _) -> ty
   | _ -> failwith "get_base_ty"
 
-let get_contents_ty = function TVar (ty, _) | ty -> ty
+let get_contents_ty = function TVar (ty, _, _) | ty -> ty

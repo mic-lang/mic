@@ -22,15 +22,14 @@ int main () using p {
     goto label;
     struct Y p* a;
     struct Y{int p* a;} p auto* b;
-    *******printf;
-    *&*(b->a);
+    *&*&(b->a);
     //&5;
     func<>;
     int c[4];
     &c[3];
 label : 
     for (int i=0;i<5;i++) using q {
-        (**************printf)("%d");
+        (*printf)("%d");
         if (++i==4)
         break;
         if (i<5)continue;

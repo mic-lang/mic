@@ -33,7 +33,7 @@ let get_expr_ty = function
 let rec type_conv =
   let open Syntax in
   function
-  | TVar (ty, depth) -> TVar (type_conv ty, depth)
+  | TVar (ty, depth, kind) -> TVar (type_conv ty, depth, kind)
   | TFun (ty, decl) ->
       TPtr
         {
@@ -122,13 +122,13 @@ let rec type_expr = function
       match List.nth (List.rev !Env.program) id with
       | Decl (decl, depth) | VarDef (decl, _, depth) ->
           print_endline (fst decl);
-          EVar (TVar (type_conv (snd decl), depth), id)
+          EVar (TVar (type_conv (snd decl), depth, Auto), id)
       | GDecl decl
       | GVarDef (decl, _)
       | FunctionDef (decl, _)
       | LFunctionDef (_, decl, _) ->
           print_endline (fst decl);
-          EVar (TVar (type_conv (snd decl), Global), id)
+          EVar (TVar (type_conv (snd decl), Global, Static), id)
       | item -> failwith ("type_expr: var " ^ Syntax.show_item_ item))
   | Syntax.EBinary
       ( (( Add | Sub | Mul | Div | Mod | LShift | RShift | BitAnd | BitXor
@@ -154,25 +154,27 @@ let rec type_expr = function
   | Syntax.EUnary (Ref, expr) -> (
       let expr = type_expr expr in
       match get_expr_ty expr with
-      | TVar (ty, depth) ->
+      | TVar (ty, depth, kind) ->
           EUnary
             ( TVar
                 ( TPtr
                     {
                       pointee_ty = ty;
                       pointee_depth = depth;
-                      pointee_kind = Static;
+                      pointee_kind = kind;
                       pointee_qual = [ Const ];
                     },
-                  depth ),
+                  depth,
+                  kind ),
               Ref,
               expr )
       | _ -> failwith "not lvalue")
   | Syntax.EUnary (Deref, expr) -> (
       let expr = type_expr expr in
       match get_expr_ty expr with
-      | TVar (ty, depth) ->
-          EUnary (TVar (type_conv (Syntax.get_base_ty ty), depth), Deref, expr)
+      | TVar (ty, depth, kind) ->
+          EUnary
+            (TVar (type_conv (Syntax.get_base_ty ty), depth, kind), Deref, expr)
       | ty -> failwith ("type_expr : deref " ^ show_ty ty))
   | Syntax.EUnary (Sizeof, expr) ->
       EUnary (TDeclSpec [ TsInt ], Sizeof, type_expr expr)
@@ -191,9 +193,9 @@ let rec type_expr = function
   | Syntax.EPostfix (expr, PIdx idx) -> (
       let expr = type_expr expr in
       match get_expr_ty expr with
-      | TVar (ty, depth) ->
+      | TVar (ty, depth, kind) ->
           EPostfix
-            ( TVar (type_conv (Syntax.get_base_ty ty), depth),
+            ( TVar (type_conv (Syntax.get_base_ty ty), depth, kind),
               expr,
               PIdx (type_expr idx) )
       | ty -> failwith ("type_expr : idx " ^ show_ty ty))
@@ -208,17 +210,20 @@ let rec type_expr = function
                 | TsStructDef id
                 | TsUnionDef id );
               ],
-            depth ) -> (
+            depth,
+            kind ) -> (
           match List.nth (List.rev !Env.program) id with
           | StructDef (_, _, mems) | UnionDef (_, _, mems) ->
               EPostfix
-                (TVar (type_conv (List.assoc name mems), depth), expr, PDot name)
+                ( TVar (type_conv (List.assoc name mems), depth, kind),
+                  expr,
+                  PDot name )
           | _ -> failwith "type_expr: dot")
       | _ -> failwith "type_expr: dot")
   | Syntax.EPostfix (expr, PArrow name) -> (
       let expr = type_expr expr in
       match get_expr_ty expr with
-      | TVar (ty, depth) -> (
+      | TVar (ty, depth, kind) -> (
           match Syntax.get_base_ty ty with
           | TDeclSpec
               [
@@ -230,7 +235,7 @@ let rec type_expr = function
               match List.nth (List.rev !Env.program) id with
               | StructDef (_, _, mems) | UnionDef (_, _, mems) ->
                   EPostfix
-                    ( TVar (type_conv (List.assoc name mems), depth),
+                    ( TVar (type_conv (List.assoc name mems), depth, kind),
                       expr,
                       PArrow name )
               | _ -> failwith "type_expr: arrow")
