@@ -1,6 +1,6 @@
 lifetime <depth p, depth q, kind a>
 static struct X<p, q> func(struct Y a, int b) using p {
-    struct Y {int x;};
+    struct Y {int x;int y;};
     return (struct X){0};
 }
 struct X;
@@ -10,6 +10,7 @@ struct X<static, dyn> dyn* x;
 lifetime <depth p, kind a>
 struct X {
     void p a* x;
+    int a;
 };
 
 struct X<static, dyn>* y;
