@@ -38,7 +38,7 @@ let rec gen_declspec = function
       | _ -> failwith "gen_declspec")
   | TsTypedef id -> (
       match List.nth (List.rev !Env.program) id with
-      | Decl ((name, _), _) | GDecl (name, _) -> name
+      | Decl ((name, _), _, _) | GDecl (name, _) -> name
       | _ -> failwith "gen_declspec")
   | ScsTypedef -> "typedef"
   | ScsExtern -> "extern"
@@ -118,9 +118,9 @@ and gen_expr = function
   | EConst v -> gen_value v
   | EVar id -> (
       match List.nth (List.rev !Env.program) id with
-      | Decl ((name, _), _)
+      | Decl ((name, _), _, _)
       | GDecl (name, _)
-      | VarDef ((name, _), _, _)
+      | VarDef ((name, _), _, _, _)
       | GVarDef ((name, _), _)
       | FunctionDef ((name, _), _) ->
           name
@@ -208,8 +208,8 @@ let rec gen_stmt = function
   | SExpr (Some expr) -> gen_expr expr ^ ";"
 
 and gen_item = function
-  | Decl ((name, ty), _) -> gen_decl name ty ^ ";"
-  | VarDef ((name, ty), init, _) ->
+  | Decl ((name, ty), _, _) -> gen_decl name ty ^ ";"
+  | VarDef ((name, ty), init, _, _) ->
       gen_decl name ty ^ " = " ^ gen_init init ^ ";"
   | _ -> ""
 

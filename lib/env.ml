@@ -138,14 +138,14 @@ let make_uniondef name lparams decl =
       | None -> TsUnionDef (push_def (UnionDef (name, lparams, decl))))
 
 let is_decl name = function
-  | (Decl ((n, _), _) | GDecl (n, _)) when n = name -> true
+  | (Decl ((n, _), _, _) | GDecl (n, _)) when n = name -> true
   | _ -> false
 
 let lookup_decl name l = find_item (is_decl name) l
 let lookup_decl name = lookup_decl name (get_stack ())
 
 let is_vardef name = function
-  | (VarDef ((n, _), _, _) | GVarDef ((n, _), _)) when n = name -> true
+  | (VarDef ((n, _), _, _, _) | GVarDef ((n, _), _)) when n = name -> true
   | _ -> false
 
 let lookup_vardef name l = find_item (is_vardef name) l
@@ -209,7 +209,7 @@ let lookup_nontypedef_decl name =
   match lookup_decl name with
   | Some id -> (
       match List.nth (List.rev !program) id with
-      | Decl ((_, ty), _) | GDecl (_, ty) ->
+      | Decl ((_, ty), _, _) | GDecl (_, ty) ->
           let dsl = get_declspec ty in
           if not (List.mem ScsTypedef dsl) then Some id else None
       | _ -> None)
@@ -219,7 +219,7 @@ let lookup_typedef name =
   match lookup_decl name with
   | Some id -> (
       match List.nth (List.rev !program) id with
-      | Decl ((_, ty), _) | GDecl (_, ty) ->
+      | Decl ((_, ty), _, _) | GDecl (_, ty) ->
           let dsl = get_declspec ty in
           if List.mem ScsTypedef dsl then Some id else None
       | _ -> None)

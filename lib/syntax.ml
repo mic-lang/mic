@@ -42,12 +42,12 @@ type unary = Inc | Dec | Plus | Minus | BitNot | LogNot | Ref | Deref | Sizeof
 type 'expr item =
   | Block of string * int
   | Kind of string
-  | Decl of 'expr decl * depth
+  | Decl of 'expr decl * depth * ownership ref
   | GDecl of 'expr decl
   | StructDecl of string
   | UnionDecl of string
   | EnumDecl of string
-  | VarDef of 'expr decl * 'expr init * depth
+  | VarDef of 'expr decl * 'expr init * depth * ownership ref
   | GVarDef of 'expr decl * 'expr init
   | StructDef of string * lparam list * 'expr decl list
   | UnionDef of string * lparam list * 'expr decl list
@@ -162,7 +162,7 @@ and 'expr pointer = {
 }
 
 and 'expr var = {
-  mutable ownership : ownership;
+  ownership : ownership ref;
   var_ty : 'expr ty;
   var_depth : depth;
   var_kind : kind;
@@ -185,3 +185,8 @@ let get_base_ty = function
   | _ -> failwith "get_base_ty"
 
 let get_contents_ty = function TVar { var_ty = ty; _ } | ty -> ty
+
+let filter_depth l =
+  List.filter_map
+    (function LBlock (name, depth) -> Some (Depth (name, depth)) | _ -> None)
+    l

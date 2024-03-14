@@ -28,8 +28,8 @@ let make_decls ty dl =
 
 let make_decls_with_init ty init_decl_list depth =
   List.map (function 
-    | (d,Some init) -> push_def (VarDef(make_decl ty d,init, depth))
-    | (d,None) -> push_def (Decl (make_decl ty d, depth))
+    | (d,Some init) -> push_def (VarDef(make_decl ty d,init, depth, ref Has))
+    | (d,None) -> push_def (Decl (make_decl ty d, depth, ref Has))
   ) init_decl_list
 
 let make_gdecls_with_init ty init_decl_list =
