@@ -62,7 +62,7 @@ and gen_type_quals l =
   if str = "" then "" else str ^ " "
 
 and gen_decl str = function
-  | TVar (ty, _, _) -> gen_decl str ty
+  | TVar { var_ty = ty; _ } -> gen_decl str ty
   | TPtr { pointee_ty = (TArr _ | TFun _) as ty; pointee_qual = quals; _ } ->
       gen_decl ("(" ^ "*" ^ gen_type_quals quals ^ str ^ ")") ty
   | TPtr { pointee_ty = ty; pointee_qual = quals; _ } ->

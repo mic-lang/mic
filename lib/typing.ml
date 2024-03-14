@@ -33,7 +33,14 @@ let get_expr_ty = function
 let rec type_conv =
   let open Syntax in
   function
-  | TVar (ty, depth, kind) -> TVar (type_conv ty, depth, kind)
+  | TVar { var_ty = ty; var_depth = depth; var_kind = kind; var_qual = qual } ->
+      TVar
+        {
+          var_ty = type_conv ty;
+          var_depth = depth;
+          var_kind = kind;
+          var_qual = qual;
+        }
   | TFun (ty, decl) ->
       TPtr
         {
@@ -122,13 +129,29 @@ let rec type_expr = function
       match List.nth (List.rev !Env.program) id with
       | Decl (decl, depth) | VarDef (decl, _, depth) ->
           print_endline (fst decl);
-          EVar (TVar (type_conv (snd decl), depth, Auto), id)
+          EVar
+            ( TVar
+                {
+                  var_ty = type_conv (snd decl);
+                  var_depth = depth;
+                  var_kind = Auto;
+                  var_qual = [];
+                },
+              id )
       | GDecl decl
       | GVarDef (decl, _)
       | FunctionDef (decl, _)
       | LFunctionDef (_, decl, _) ->
           print_endline (fst decl);
-          EVar (TVar (type_conv (snd decl), Global, Static), id)
+          EVar
+            ( TVar
+                {
+                  var_ty = type_conv (snd decl);
+                  var_depth = Global;
+                  var_kind = Static;
+                  var_qual = [];
+                },
+              id )
       | item -> failwith ("type_expr: var " ^ Syntax.show_item_ item))
   | Syntax.EBinary
       ( (( Add | Sub | Mul | Div | Mod | LShift | RShift | BitAnd | BitXor
@@ -154,27 +177,43 @@ let rec type_expr = function
   | Syntax.EUnary (Ref, expr) -> (
       let expr = type_expr expr in
       match get_expr_ty expr with
-      | TVar (ty, depth, kind) ->
+      | TVar
+          { var_ty = ty; var_depth = depth; var_kind = kind; var_qual = qual }
+        ->
           EUnary
             ( TVar
-                ( TPtr
-                    {
-                      pointee_ty = ty;
-                      pointee_depth = depth;
-                      pointee_kind = kind;
-                      pointee_qual = [ Const ];
-                    },
-                  depth,
-                  kind ),
+                {
+                  var_ty =
+                    TPtr
+                      {
+                        pointee_ty = ty;
+                        pointee_depth = depth;
+                        pointee_kind = kind;
+                        pointee_qual = qual;
+                      };
+                  var_depth = depth;
+                  var_kind = kind;
+                  var_qual = qual;
+                },
               Ref,
               expr )
       | _ -> failwith "not lvalue")
   | Syntax.EUnary (Deref, expr) -> (
       let expr = type_expr expr in
       match get_expr_ty expr with
-      | TVar (ty, depth, kind) ->
+      | TVar
+          { var_ty = ty; var_depth = depth; var_kind = kind; var_qual = qual }
+        ->
           EUnary
-            (TVar (type_conv (Syntax.get_base_ty ty), depth, kind), Deref, expr)
+            ( TVar
+                {
+                  var_ty = type_conv (Syntax.get_base_ty ty);
+                  var_depth = depth;
+                  var_kind = kind;
+                  var_qual = qual;
+                },
+              Deref,
+              expr )
       | ty -> failwith ("type_expr : deref " ^ show_ty ty))
   | Syntax.EUnary (Sizeof, expr) ->
       EUnary (TDeclSpec [ TsInt ], Sizeof, type_expr expr)
@@ -193,9 +232,17 @@ let rec type_expr = function
   | Syntax.EPostfix (expr, PIdx idx) -> (
       let expr = type_expr expr in
       match get_expr_ty expr with
-      | TVar (ty, depth, kind) ->
+      | TVar
+          { var_ty = ty; var_depth = depth; var_kind = kind; var_qual = qual }
+        ->
           EPostfix
-            ( TVar (type_conv (Syntax.get_base_ty ty), depth, kind),
+            ( TVar
+                {
+                  var_ty = type_conv (Syntax.get_base_ty ty);
+                  var_depth = depth;
+                  var_kind = kind;
+                  var_qual = qual;
+                },
               expr,
               PIdx (type_expr idx) )
       | ty -> failwith ("type_expr : idx " ^ show_ty ty))
@@ -203,19 +250,29 @@ let rec type_expr = function
       let expr = type_expr expr in
       match get_expr_ty expr with
       | TVar
-          ( TDeclSpec
-              [
-                ( TsStruct (id, _)
-                | TsUnion (id, _)
-                | TsStructDef id
-                | TsUnionDef id );
-              ],
-            depth,
-            kind ) -> (
+          {
+            var_ty =
+              TDeclSpec
+                [
+                  ( TsStruct (id, _)
+                  | TsUnion (id, _)
+                  | TsStructDef id
+                  | TsUnionDef id );
+                ];
+            var_depth = depth;
+            var_kind = kind;
+            var_qual = qual;
+          } -> (
           match List.nth (List.rev !Env.program) id with
           | StructDef (_, _, mems) | UnionDef (_, _, mems) ->
               EPostfix
-                ( TVar (type_conv (List.assoc name mems), depth, kind),
+                ( TVar
+                    {
+                      var_ty = type_conv (List.assoc name mems);
+                      var_depth = depth;
+                      var_kind = kind;
+                      var_qual = qual;
+                    },
                   expr,
                   PDot name )
           | _ -> failwith "type_expr: dot")
@@ -223,7 +280,9 @@ let rec type_expr = function
   | Syntax.EPostfix (expr, PArrow name) -> (
       let expr = type_expr expr in
       match get_expr_ty expr with
-      | TVar (ty, depth, kind) -> (
+      | TVar
+          { var_ty = ty; var_depth = depth; var_kind = kind; var_qual = qual }
+        -> (
           match Syntax.get_base_ty ty with
           | TDeclSpec
               [
@@ -235,7 +294,13 @@ let rec type_expr = function
               match List.nth (List.rev !Env.program) id with
               | StructDef (_, _, mems) | UnionDef (_, _, mems) ->
                   EPostfix
-                    ( TVar (type_conv (List.assoc name mems), depth, kind),
+                    ( TVar
+                        {
+                          var_ty = type_conv (List.assoc name mems);
+                          var_depth = depth;
+                          var_kind = kind;
+                          var_qual = qual;
+                        },
                       expr,
                       PArrow name )
               | _ -> failwith "type_expr: arrow")
