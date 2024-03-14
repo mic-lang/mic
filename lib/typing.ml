@@ -271,14 +271,20 @@ let rec type_expr env = function
   | Syntax.EUnary (Sizeof, expr) ->
       EUnary (TDeclSpec [ TsInt ], Sizeof, type_expr env expr)
   | Syntax.ESizeof ty -> ESizeof (TDeclSpec [ TsInt ], type_conv ty)
-  | Syntax.EPostfix (expr, PCall params) -> (
+  | Syntax.EPostfix (expr, PCall args) -> (
       let expr = type_expr env expr in
-      let params = List.map (type_expr env) params in
+      let args =
+        List.map
+          (function
+            | Syntax.AExpr expr -> Syntax.AExpr (type_expr env expr)
+            | Syntax.ADepth depth -> Syntax.ADepth depth)
+          args
+      in
       match
         Syntax.get_base_ty
           (Syntax.get_contents_ty (type_conv (get_expr_ty expr)))
       with
-      | TFun (ret, _) -> EPostfix (ret, expr, PCall params)
+      | TFun (ret, _) -> EPostfix (ret, expr, PCall args)
       | _ ->
           print_endline (show_ty (type_conv (get_expr_ty expr)));
           failwith "type_expr env")

@@ -108,8 +108,10 @@ postfix_expr:
                                           { ECompoundLit($2,IVect $5) }
 
 argument_expr_list:
-| assignment_expr                         { [$1] }
-| argument_expr_list "," assignment_expr  { $1 @ [$3] }
+| DEPTH_ID                                { [ADepth (Depth(fst (get_depth $1), snd (get_depth $1)))] }
+| STATIC                                  { [ADepth Global] }
+| assignment_expr                         { [AExpr $1] }
+| argument_expr_list "," assignment_expr  { $1 @ [AExpr $3] }
 
 unary_expr:
 | postfix_expr                            { $1 }

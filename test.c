@@ -21,13 +21,9 @@ int main () using p {
     //struct X<p, dyn> *const b = func<p, dyn>((struct X){.x=0});
     goto label;
     //struct Y p* a;
-    //struct Y{int p* a;} p auto* b;
     int a;
-    {
-        int b = a;
-    }
-    a;
-    //*&*&(b->a);
+    struct Y{int p* a;} p auto* b = &a;
+    //a;
     //&5;
     func<>;
     int c[4];

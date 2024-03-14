@@ -79,13 +79,15 @@ and expr =
 [@@deriving show]
 
 and 'expr postfix =
-  | PCall of 'expr list
+  | PCall of 'expr arg list
   | PIdx of 'expr
   | PDot of string
   | PArrow of string
   | PInc
   | PDec
 [@@deriving show]
+
+and 'expr arg = AExpr of 'expr | ADepth of depth
 
 and 'expr init = IScal of 'expr | IVect of ('expr design * 'expr init) list
 [@@deriving show]

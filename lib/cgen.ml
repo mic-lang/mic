@@ -142,12 +142,14 @@ and gen_expr = function
 
 and gen_postfix = function
   | PCall l ->
-      "(" ^ String.concat ", " (List.map (fun expr -> gen_expr expr) l) ^ ")"
+      "(" ^ String.concat ", " (List.map (fun expr -> gen_arg expr) l) ^ ")"
   | PIdx expr -> "[" ^ gen_expr expr ^ "]"
   | PDot mem -> "." ^ mem
   | PArrow mem -> "->" ^ mem
   | PInc -> "++"
   | PDec -> "--"
+
+and gen_arg = function AExpr expr -> gen_expr expr | ADepth _ -> "NULL"
 
 and gen_init = function
   | IScal expr -> gen_expr expr
