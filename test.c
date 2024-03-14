@@ -24,9 +24,7 @@ int main () using p {
     //struct Y{int p* a;} p auto* b;
     int a;
     {
-        int b;
-        b = a;
-        a;
+        int b = a;
     }
     a;
     //*&*&(b->a);

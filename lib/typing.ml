@@ -190,6 +190,18 @@ let rec type_expr env = function
       let rhs = type_expr env rhs in
       EBinary
         (Syntax.get_contents_ty (get_expr_ty rhs), Comma, type_expr env lhs, rhs)
+  | Syntax.EAssign (bin, lhs, Syntax.ECompoundLit (ty, init)) ->
+      let lhs = type_expr env lhs in
+      let rhs =
+        ECompoundLit
+          (type_conv ty, type_init env (type_conv (get_expr_ty lhs)) init)
+      in
+      (match (get_expr_ty lhs, get_expr_ty rhs) with
+      | TVar { var_depth = depth; _ }, TVar { ownership; _ } ->
+          ownership := Moved depth;
+          print_endline ("ownership:" ^ show_ty (get_expr_ty rhs))
+      | _ -> ());
+      EAssign (get_expr_ty lhs, bin, lhs, rhs)
   | Syntax.EAssign (bin, lhs, rhs) ->
       let lhs = type_expr env lhs in
       let rhs = type_expr env rhs in
@@ -380,7 +392,14 @@ let rec type_expr env = function
 
 and type_init env ty init =
   match init with
-  | Syntax.IScal expr -> Syntax.IScal (type_expr env expr)
+  | Syntax.IScal expr ->
+      let rhs = type_expr env expr in
+      (match (ty, get_expr_ty rhs) with
+      | TVar { var_depth = depth; _ }, TVar { ownership; _ } ->
+          ownership := Moved depth;
+          print_endline ("ownership:" ^ show_ty (get_expr_ty rhs))
+      | _ -> ());
+      Syntax.IScal rhs
   | Syntax.IVect l -> (
       let loc = ref 0 in
       match ty with
@@ -449,7 +468,25 @@ and type_design env ty design loc =
 let rec type_stmt env =
   let open Syntax in
   function
-  | SDef l -> SDef l
+  | SDef l ->
+      let f id =
+        match List.nth (List.rev !Env.program) id with
+        | VarDef ((_, ty), init, depth, ownership) ->
+            let ty =
+              Syntax.TVar
+                {
+                  ownership;
+                  var_ty = type_conv ty;
+                  var_depth = depth;
+                  var_kind = Auto;
+                  var_qual = [];
+                }
+            in
+            ignore (type_init env ty init)
+        | _ -> ()
+      in
+      List.iter f l;
+      SDef l
   | SStmts (d, stmts) -> SStmts (d, List.map (type_stmt (d :: env)) stmts)
   | SWhile (expr, stmt) -> SWhile (type_expr env expr, type_stmt env stmt)
   | SDoWhile (stmt, expr) -> SDoWhile (type_stmt env stmt, type_expr env expr)
