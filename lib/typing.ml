@@ -118,6 +118,7 @@ let rec type_conv =
           in
           TDeclSpec [ e ]
         with _ -> failwith "type_conv")
+  | TBlock -> TBlock
 
 let used_var_type env = function
   | Syntax.TVar { ownership = { contents = Moved depth } as ownership; _ } ->
@@ -213,12 +214,49 @@ let rec apply subst =
   | TDeclSpec l ->
       let f = function
         | TsStruct (id, lparams) ->
-            TsStruct (id, List.map (apply_lparams subst) lparams)
+            let largs = List.map (apply_lparams subst) lparams in
+            (match List.nth (List.rev !Env.program) id with
+            | StructDef (_, lparams, _) -> ignore (unify lparams largs)
+            | _ -> failwith "apply");
+            TsStruct (id, largs)
         | TsUnion (id, lparams) ->
-            TsUnion (id, List.map (apply_lparams subst) lparams)
+            let largs = List.map (apply_lparams subst) lparams in
+            (match List.nth (List.rev !Env.program) id with
+            | UnionDef (_, lparams, _) -> ignore (unify lparams largs)
+            | _ -> failwith "apply");
+            TsUnion (id, largs)
         | ds -> ds
       in
       TDeclSpec (List.map f l)
+  | TBlock -> TBlock
+
+let rec check_ty =
+  let open Syntax in
+  function
+  | TVar { var_ty = ty; _ } -> check_ty ty
+  | TFun (ty, params) ->
+      check_ty ty;
+      List.iter (fun (_, ty) -> check_ty ty) params
+  | TPtr { pointee_ty = ty; _ } -> check_ty ty
+  | TArr (ty, _) -> check_ty ty
+  | TDeclSpec l ->
+      let f = function
+        | TsStruct (id, largs) -> (
+            match List.nth (List.rev !Env.program) id with
+            | StructDef (_, lparams, _) -> ignore (unify lparams largs)
+            | StructDecl _ -> ()
+            | _ as item ->
+                print_endline (Syntax.show_item_ item);
+                failwith "struct error")
+        | TsUnion (id, largs) -> (
+            match List.nth (List.rev !Env.program) id with
+            | UnionDef (_, lparams, _) -> ignore (unify lparams largs)
+            | UnionDecl _ -> ()
+            | _ -> failwith "union error")
+        | _ -> ()
+      in
+      List.iter f l
+  | TBlock -> ()
 
 let rec type_expr env = function
   | Syntax.EConst v -> (
@@ -423,20 +461,36 @@ let rec type_expr env = function
       | TVar
           {
             ownership;
-            var_ty =
-              TDeclSpec
-                [
-                  ( TsStruct (id, _)
-                  | TsUnion (id, _)
-                  | TsStructDef id
-                  | TsUnionDef id );
-                ];
+            var_ty = TDeclSpec [ (TsStruct (id, largs) | TsUnion (id, largs)) ];
             var_depth = depth;
             var_kind = kind;
             var_qual = qual;
           } -> (
           match List.nth (List.rev !Env.program) id with
-          | StructDef (_, _, mems) | UnionDef (_, _, mems) ->
+          | StructDef (_, lparams, mems) | UnionDef (_, lparams, mems) ->
+              let subst = unify lparams largs in
+              EPostfix
+                ( TVar
+                    {
+                      ownership;
+                      var_ty = apply subst (type_conv (List.assoc name mems));
+                      var_depth = depth;
+                      var_kind = kind;
+                      var_qual = qual;
+                    },
+                  expr,
+                  PDot name )
+          | _ -> failwith "type_expr env: dot")
+      | TVar
+          {
+            ownership;
+            var_ty = TDeclSpec [ (TsStructDef id | TsUnionDef id) ];
+            var_depth = depth;
+            var_kind = kind;
+            var_qual = qual;
+          } -> (
+          match List.nth (List.rev !Env.program) id with
+          | StructDef (_, [], mems) | UnionDef (_, [], mems) ->
               EPostfix
                 ( TVar
                     {
@@ -462,15 +516,26 @@ let rec type_expr env = function
             var_qual = qual;
           } -> (
           match Syntax.get_base_ty ty with
-          | TDeclSpec
-              [
-                ( TsStruct (id, _)
-                | TsUnion (id, _)
-                | TsStructDef id
-                | TsUnionDef id );
-              ] -> (
+          | TDeclSpec [ (TsStruct (id, largs) | TsUnion (id, largs)) ] -> (
               match List.nth (List.rev !Env.program) id with
-              | StructDef (_, _, mems) | UnionDef (_, _, mems) ->
+              | StructDef (_, lparams, mems) | UnionDef (_, lparams, mems) ->
+                  let subst = unify lparams largs in
+                  EPostfix
+                    ( TVar
+                        {
+                          ownership;
+                          var_ty =
+                            apply subst (type_conv (List.assoc name mems));
+                          var_depth = depth;
+                          var_kind = kind;
+                          var_qual = qual;
+                        },
+                      expr,
+                      PArrow name )
+              | _ -> failwith "type_expr env: arrow")
+          | TDeclSpec [ (TsStructDef id | TsUnionDef id) ] -> (
+              match List.nth (List.rev !Env.program) id with
+              | StructDef (_, [], mems) | UnionDef (_, [], mems) ->
                   EPostfix
                     ( TVar
                         {
@@ -523,7 +588,7 @@ and type_init env ty init =
                 (design, type_init env ty init) :: aux xs
           in
           IVect (aux l)
-      | Syntax.TDeclSpec [ TsStruct (id, _) ] ->
+      | Syntax.TDeclSpec [ (TsStruct (id, _) | TsStructDef id) ] ->
           let mems =
             match List.nth (List.rev !Env.program) id with
             | StructDef (_, _, mems) -> mems
@@ -628,15 +693,25 @@ let rec type_program =
   | Block (d, n) :: xs -> Block (d, n) :: type_program xs
   | Kind n :: xs -> Kind n :: type_program xs
   | Decl ((n, ty), d, own) :: xs ->
+      check_ty ty;
       Decl ((n, type_conv ty), d, own) :: type_program xs
-  | GDecl (n, ty) :: xs -> GDecl (n, type_conv ty) :: type_program xs
+  | GDecl (n, ty) :: xs ->
+      check_ty ty;
+      GDecl (n, type_conv ty) :: type_program xs
+  | LDecl (lparams, (n, ty)) :: xs ->
+      check_ty ty;
+      LDecl (lparams, (n, type_conv ty)) :: type_program xs
+  | LStructDecl (n, lp) :: xs -> LStructDecl (n, lp) :: type_program xs
+  | LUnionDecl (n, lp) :: xs -> LUnionDecl (n, lp) :: type_program xs
   | StructDecl n :: xs -> StructDecl n :: type_program xs
   | UnionDecl n :: xs -> UnionDecl n :: type_program xs
   | EnumDecl n :: xs -> EnumDecl n :: type_program xs
   | VarDef ((n, ty), init, d, own) :: xs ->
+      check_ty ty;
       VarDef ((n, type_conv ty), type_init [] (type_conv ty) init, d, own)
       :: type_program xs
   | GVarDef ((n, ty), init) :: xs ->
+      check_ty ty;
       GVarDef ((n, type_conv ty), type_init [] (type_conv ty) init)
       :: type_program xs
   | StructDef (n, lp, l) :: xs ->

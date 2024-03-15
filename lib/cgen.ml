@@ -17,6 +17,7 @@ let rec gen_declspec nest = function
       ^
       match List.nth (List.rev !Env.program) id with
       | StructDecl name -> name
+      | LStructDecl (name, _) -> name
       | StructDef (name, _, _) -> name
       | _ -> failwith "gen_declspec")
   | TsStructDef id -> (
@@ -31,6 +32,7 @@ let rec gen_declspec nest = function
       ^
       match List.nth (List.rev !Env.program) id with
       | UnionDecl name -> name
+      | LUnionDecl (name, _) -> name
       | UnionDef (name, _, _) -> name
       | _ -> failwith "gen_declspec")
   | TsUnionDef id -> (
@@ -75,6 +77,7 @@ and gen_decl nest str = function
   | TArr (ty, expr) -> gen_decl nest (str ^ "[" ^ gen_expr expr ^ "]") ty
   | TFun (ty, l) -> gen_decl nest (str ^ "(" ^ gen_params nest l ^ ")") ty
   | TDeclSpec l -> gen_declspecs nest l ^ if str = "" then "" else " " ^ str
+  | TBlock -> "void*"
 
 and gen_params nest l =
   String.concat ", " (List.map (fun (name, ty) -> gen_decl nest name ty) l)
@@ -235,7 +238,7 @@ and gen_item nest = function
   | _ -> ""
 
 and gen_item_global = function
-  | GDecl (name, ty) -> gen_decl 0 name ty ^ ";" ^ "\n"
+  | GDecl (name, ty) | LDecl (_, (name, ty)) -> gen_decl 0 name ty ^ ";" ^ "\n"
   | GVarDef ((name, ty), init) ->
       gen_decl 0 name ty ^ " = " ^ gen_init init ^ ";" ^ "\n"
   | FunctionDef ((name, ty), stmt) ->

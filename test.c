@@ -1,15 +1,17 @@
 lifetime <depth p, depth q, kind a>
-static struct X<p, q> func(struct Y a, int b) using p {
+static struct X<p, a> func(struct X<p,a> c, int b) using r {
+    struct X<static, dyn>* y;
     struct Y {int x;int y;};
-    return (struct X){0};
+    return (struct X<p,dyn>){0};
 }
-struct X;
+struct X<static, dyn>;
 struct Y;
 struct X<static, dyn> dyn* x;
-
+lifetime <depth p, kind a>
+struct X;
 lifetime <depth p, kind a>
 struct X {
-    void p a* x;
+    void p* x;
     int a;
 };
 
@@ -17,19 +19,23 @@ struct X<static, dyn>* y;
 
 extern int printf(const char *, ...);
 
+lifetime <depth p>
+extern void p dyn* malloc(depth p, int size);  
+
 int main () using p {
     func<p,p,static>;;
-    //struct X<p, dyn> *const b = func<p, dyn>((struct X){.x=0});
+    struct X<p, dyn> *const b = func<p,p, dyn>((struct X<p,dyn>){.x=0});
     goto label;
-    //struct Y p* a;
+    struct Y p* a;
     int a;
     struct Y{int p* a;} p auto* b = &a;
+
     //a;
     //&5;
     func<static,static,auto>;
     int c[4];
     //a = c[3];
-    //c;
+    c;
 
 label : 
     for (int i=0;i<5;i++) using q {
@@ -49,15 +55,14 @@ return 0;
 }
 char c = '\n';
 unsigned i = 5;
-struct X x= {.x=0,};
+//struct X x= {.x=0,};
 char* var[4+5] = "abc";
 int* const x;
 
-typedef struct X Z;
+typedef struct X<static,static> Z;
 Z;
-void(*func)(int a);
+//void(*func)(int a);
 char *const ptr [4] ;
 char (*const ptrq)[4];
 void (*signal (int sig, void(*func)(int a)))(int b);
 void (*(*p)[10])(int a, int b);
-struct X x = (struct X){.x=0,};

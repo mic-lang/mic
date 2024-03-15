@@ -60,13 +60,13 @@ let leave_scope () =
 let enter_scope_first () =
   program := !lparams @ !program;
   stack := !curr_scope :: !stack;
-  curr_scope := !lscope;
-  in_lparams := false
+  curr_scope := !lscope
 
 let leave_scope_last () =
   curr_scope := List.hd !stack;
   stack := List.tl !stack;
   curr_depth := 0;
+  in_lparams := false;
   lscope := [];
   lparams := []
 
@@ -76,11 +76,11 @@ let update_program id def =
       (List.mapi (fun i x -> if i = id then def else x) (List.rev !program))
 
 let is_structdecl name = function
-  | StructDecl n when n = name -> true
+  | (StructDecl n | LStructDecl (n, _)) when n = name -> true
   | _ -> false
 
 let is_uniondecl name = function
-  | UnionDecl n when n = name -> true
+  | (UnionDecl n | LUnionDecl (n, _)) when n = name -> true
   | _ -> false
 
 let is_structdef name = function
@@ -116,6 +116,22 @@ let make_uniondecl name lparams =
       match lookup_structdef name (get_stack ()) with
       | Some id -> TsUnion (id, lparams)
       | None -> TsUnion (push_def (UnionDecl name), lparams))
+
+let make_lstructdecl name lparams =
+  match lookup_structdecl name (get_stack ()) with
+  | Some id -> TsStruct (id, lparams)
+  | None -> (
+      match lookup_structdef name (get_stack ()) with
+      | Some id -> TsStruct (id, lparams)
+      | None -> TsStruct (push_def (LStructDecl (name, lparams)), lparams))
+
+let make_luniondecl name lparams =
+  match lookup_uniondecl name (get_stack ()) with
+  | Some id -> TsUnion (id, lparams)
+  | None -> (
+      match lookup_structdef name (get_stack ()) with
+      | Some id -> TsUnion (id, lparams)
+      | None -> TsUnion (push_def (LUnionDecl (name, lparams)), lparams))
 
 let make_structdef name lparams decl =
   match lookup_structdecl name (get_scope ()) with

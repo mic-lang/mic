@@ -44,8 +44,11 @@ type 'expr item =
   | Kind of string
   | Decl of 'expr decl * depth * ownership ref
   | GDecl of 'expr decl
+  | LDecl of lparam list * 'expr decl
   | StructDecl of string
   | UnionDecl of string
+  | LStructDecl of string * lparam list
+  | LUnionDecl of string * lparam list
   | EnumDecl of string
   | VarDef of 'expr decl * 'expr init * depth * ownership ref
   | GVarDef of 'expr decl * 'expr init
@@ -122,6 +125,7 @@ and 'expr ty =
   | TPtr of 'expr pointer
   | TArr of 'expr ty * 'expr
   | TDeclSpec of ds list
+  | TBlock
 [@@deriving show]
 
 and 'expr decl = string * 'expr ty [@@deriving show]
@@ -184,6 +188,7 @@ let rec get_declspec = function
   | TArr (ty, _) ->
       get_declspec ty
   | TDeclSpec l -> l
+  | TBlock -> failwith "gen_declspec"
 
 let get_base_ty = function
   | TPtr { pointee_ty = ty; _ } | TArr (ty, _) -> ty

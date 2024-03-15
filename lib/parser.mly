@@ -297,18 +297,25 @@ struct_or_union_spec:
 | UNION ident                             { make_uniondecl $2 [] }
 | UNION ident  LT separated_list(",", larg) GT { make_uniondecl $2 $4 }
 
-ldecl:
+lstruct_decl:
 | lifetime_declaration STRUCT ident? "{" list(struct_decl) "}" enter_scope_first leave_scope_last                         
-                                            { make_structdef
+                                            { GDecl (make_decl (TDeclSpec [make_structdef
                                               (conv_ident $3)
                                               $1
-                                              (List.flatten $5) }
+                                              (List.flatten $5)]) (DeclIdent "")) }
 | lifetime_declaration UNION ident? "{" list(struct_decl) "}" enter_scope_first leave_scope_last                         
-                                            { make_uniondef
+                                            { GDecl (make_decl (TDeclSpec [make_uniondef
                                               (conv_ident $3)
                                               $1
-                                              (List.flatten $5) }
-
+                                              (List.flatten $5)]) (DeclIdent "")) }
+| lifetime_declaration STRUCT ident                         
+                                            { GDecl (make_decl (TDeclSpec [make_lstructdecl
+                                              $3
+                                              $1]) (DeclIdent "")) }
+| lifetime_declaration UNION ident                         
+                                            { GDecl (make_decl (TDeclSpec [make_luniondecl
+                                              $3
+                                              $1]) (DeclIdent "")) }
 struct_decl:
 | spec_qual_list struct_declarator_list? ";"
                                           { match $2 with
@@ -389,6 +396,7 @@ parameter_list:
 | parameter_list "," parameter_decl       { $1 @ $3 }
 
 parameter_decl:
+| DEPTH DEPTH_ID                          { [($2, TBlock)] }
 | decl_specs declarator                   { [make_decl $1 $2] }
 | decl_specs abstract_declarator?         { match $2 with
                                             | Some d -> [make_decl $1 d]
@@ -511,8 +519,12 @@ jump_stmt:
 external_decl:
 | function_def                            { [push_def $1] }
 | gdecl ";"                               { $1 }
-| ldecl ";"                               { [] }
+| ldecl ";"                               { [push_def $1] }
+| lstruct_decl ";"                        { [push_def $1] }
 | ";"                                     { [] }
+
+ldecl:
+| lifetime_declaration decl_specs enter_scope_first enter_scope declarator leave_scope leave_scope_last { LDecl($1, make_decl $2 $5) }
 
 function_def:
 | decl_specs enter_scope declarator no_depth "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts(Depth(fst $4, snd $4), $6)) }
