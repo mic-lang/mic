@@ -45,10 +45,8 @@ type 'expr item =
   | Decl of 'expr decl * depth * ownership ref
   | GDecl of 'expr decl
   | LDecl of lparam list * 'expr decl
-  | StructDecl of string
-  | UnionDecl of string
-  | LStructDecl of string * lparam list
-  | LUnionDecl of string * lparam list
+  | StructDecl of string * lparam list
+  | UnionDecl of string * lparam list
   | EnumDecl of string
   | VarDef of 'expr decl * 'expr init * depth * ownership ref
   | GVarDef of 'expr decl * 'expr init

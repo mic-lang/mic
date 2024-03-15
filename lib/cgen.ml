@@ -16,8 +16,7 @@ let rec gen_declspec nest = function
       "struct "
       ^
       match List.nth (List.rev !Env.program) id with
-      | StructDecl name -> name
-      | LStructDecl (name, _) -> name
+      | StructDecl (name, _) -> name
       | StructDef (name, _, _) -> name
       | _ -> failwith "gen_declspec")
   | TsStructDef id -> (
@@ -31,8 +30,7 @@ let rec gen_declspec nest = function
       "union "
       ^
       match List.nth (List.rev !Env.program) id with
-      | UnionDecl name -> name
-      | LUnionDecl (name, _) -> name
+      | UnionDecl (name, _) -> name
       | UnionDef (name, _, _) -> name
       | _ -> failwith "gen_declspec")
   | TsUnionDef id -> (

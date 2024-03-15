@@ -309,11 +309,11 @@ lstruct_decl:
                                               $1
                                               (List.flatten $5)]) (DeclIdent "")) }
 | lifetime_declaration STRUCT ident                         
-                                            { GDecl (make_decl (TDeclSpec [make_lstructdecl
+                                            { GDecl (make_decl (TDeclSpec [make_structdecl
                                               $3
                                               $1]) (DeclIdent "")) }
 | lifetime_declaration UNION ident                         
-                                            { GDecl (make_decl (TDeclSpec [make_luniondecl
+                                            { GDecl (make_decl (TDeclSpec [make_uniondecl
                                               $3
                                               $1]) (DeclIdent "")) }
 struct_decl:

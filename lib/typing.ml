@@ -701,10 +701,8 @@ let rec type_program =
   | LDecl (lparams, (n, ty)) :: xs ->
       check_ty ty;
       LDecl (lparams, (n, type_conv ty)) :: type_program xs
-  | LStructDecl (n, lp) :: xs -> LStructDecl (n, lp) :: type_program xs
-  | LUnionDecl (n, lp) :: xs -> LUnionDecl (n, lp) :: type_program xs
-  | StructDecl n :: xs -> StructDecl n :: type_program xs
-  | UnionDecl n :: xs -> UnionDecl n :: type_program xs
+  | StructDecl (n, lp) :: xs -> StructDecl (n, lp) :: type_program xs
+  | UnionDecl (n, lp) :: xs -> UnionDecl (n, lp) :: type_program xs
   | EnumDecl n :: xs -> EnumDecl n :: type_program xs
   | VarDef ((n, ty), init, d, own) :: xs ->
       check_ty ty;

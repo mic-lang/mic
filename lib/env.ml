@@ -76,11 +76,11 @@ let update_program id def =
       (List.mapi (fun i x -> if i = id then def else x) (List.rev !program))
 
 let is_structdecl name = function
-  | (StructDecl n | LStructDecl (n, _)) when n = name -> true
+  | (StructDecl (n, _)) when n = name -> true
   | _ -> false
 
 let is_uniondecl name = function
-  | (UnionDecl n | LUnionDecl (n, _)) when n = name -> true
+  | (UnionDecl (n, _)) when n = name -> true
   | _ -> false
 
 let is_structdef name = function
@@ -101,13 +101,14 @@ let lookup_uniondecl name l = find_item (is_uniondecl name) l
 let lookup_structdef name l = find_item (is_structdef name) l
 let lookup_uniondef name l = find_item (is_uniondef name) l
 
+
 let make_structdecl name lparams =
   match lookup_structdecl name (get_stack ()) with
   | Some id -> TsStruct (id, lparams)
   | None -> (
       match lookup_structdef name (get_stack ()) with
       | Some id -> TsStruct (id, lparams)
-      | None -> TsStruct (push_def (StructDecl name), lparams))
+      | None -> TsStruct (push_def (StructDecl (name, lparams)), lparams))
 
 let make_uniondecl name lparams =
   match lookup_uniondecl name (get_stack ()) with
@@ -115,23 +116,7 @@ let make_uniondecl name lparams =
   | None -> (
       match lookup_structdef name (get_stack ()) with
       | Some id -> TsUnion (id, lparams)
-      | None -> TsUnion (push_def (UnionDecl name), lparams))
-
-let make_lstructdecl name lparams =
-  match lookup_structdecl name (get_stack ()) with
-  | Some id -> TsStruct (id, lparams)
-  | None -> (
-      match lookup_structdef name (get_stack ()) with
-      | Some id -> TsStruct (id, lparams)
-      | None -> TsStruct (push_def (LStructDecl (name, lparams)), lparams))
-
-let make_luniondecl name lparams =
-  match lookup_uniondecl name (get_stack ()) with
-  | Some id -> TsUnion (id, lparams)
-  | None -> (
-      match lookup_structdef name (get_stack ()) with
-      | Some id -> TsUnion (id, lparams)
-      | None -> TsUnion (push_def (LUnionDecl (name, lparams)), lparams))
+      | None -> TsUnion (push_def (UnionDecl (name, lparams)), lparams))
 
 let make_structdef name lparams decl =
   match lookup_structdecl name (get_scope ()) with
