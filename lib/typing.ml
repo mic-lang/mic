@@ -426,20 +426,19 @@ let rec type_expr is_unsafe env = function
       | _ -> failwith "not lvalue")
   | Syntax.EUnary (Deref, expr) -> (
       let expr = type_expr is_unsafe env expr in
-      match get_expr_ty expr with
-      | TVar
+      match Syntax.get_contents_ty (get_expr_ty expr) with
+      | TPtr
           {
-            ownership;
-            var_ty = ty;
-            var_depth = depth;
-            var_kind = kind;
-            var_qual = qual;
+            pointee_ty = ty;
+            pointee_depth = depth;
+            pointee_kind = kind;
+            pointee_qual = qual;
           } ->
           EUnary
             ( TVar
                 {
-                  ownership;
-                  var_ty = type_conv (Syntax.get_base_ty ty);
+                  ownership = ref Syntax.Has;
+                  var_ty = ty;
                   var_depth = depth;
                   var_kind = kind;
                   var_qual = qual;

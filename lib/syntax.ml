@@ -163,6 +163,7 @@ and lparam = LBlock of depth | LKind of kind [@@deriving show]
 and depths = depth list [@@deriving show]
 
 and 'expr pointer = {
+  (*pointee_ownership : ownership ref;*)
   pointee_ty : 'expr ty;
   pointee_depth : depth;
   pointee_kind : kind;
