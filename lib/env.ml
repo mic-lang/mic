@@ -24,6 +24,8 @@ let map_to_lparam l =
 let get_scope () = map_to_program !curr_scope
 let get_stack () = map_to_program (List.flatten (!curr_scope :: !stack))
 let get_lscope () = map_to_lparam !lscope
+let ownerships : (ownership ref * string) list ref = ref []
+let push_ownerships_in_params ownership = ownerships := ownership :: !ownerships
 
 let push_lparam lparam =
   let id = List.length !lparams in
@@ -55,7 +57,10 @@ let enter_scope () =
 let leave_scope () =
   curr_scope := List.hd !stack;
   stack := List.tl !stack;
-  decr curr_depth
+  decr curr_depth;
+  let ret = !ownerships in
+  ownerships := [];
+  ret
 
 let enter_scope_first () =
   program := !lparams @ !program;
@@ -138,7 +143,11 @@ let make_uniondef name lparams decl =
       | None -> TsUnionDef (push_def (UnionDef (name, lparams, decl))))
 
 let is_decl name = function
-  | (Decl ((n, _), _, _) | GDecl (n, _) | LDecl (_, (n, _))) when n = name ->
+  | Param ((n, _), _, _)
+  | Decl ((n, _), _, _)
+  | GDecl (n, _)
+  | LDecl (_, (n, _))
+    when n = name ->
       true
   | _ -> false
 
@@ -153,15 +162,15 @@ let lookup_vardef name l = find_item (is_vardef name) l
 let lookup_vardef name = lookup_vardef name (get_stack ())
 
 let is_functiondef name = function
-  | FunctionDef ((n, _), _) when n = name -> true
-  | LFunctionDef (_, (n, _), _) when n = name -> true
+  | FunctionDef ((n, _), _, _) when n = name -> true
+  | LFunctionDef (_, (n, _), _, _) when n = name -> true
   | _ -> false
 
 let lookup_functiondef name l = find_item (is_functiondef name) l
 let lookup_functiondef name = lookup_functiondef name (get_stack ())
 
 let is_nonlid_functiondef name = function
-  | FunctionDef ((n, _), _) when n = name -> true
+  | FunctionDef ((n, _), _, _) when n = name -> true
   | _ -> false
 
 let lookup_nonlid_functiondef name l = find_item (is_nonlid_functiondef name) l
@@ -170,7 +179,7 @@ let lookup_nonlid_functiondef name =
   lookup_nonlid_functiondef name (get_stack ())
 
 let is_lid name = function
-  | (LFunctionDef (_, (n, _), _) | LDecl (_, (n, _))) when n = name -> true
+  | (LFunctionDef (_, (n, _), _, _) | LDecl (_, (n, _))) when n = name -> true
   | _ -> false
 
 let lookup_lid name l = find_item (is_lid name) l
@@ -210,7 +219,7 @@ let lookup_nontypedef_decl name =
   match lookup_decl name with
   | Some id -> (
       match List.nth (List.rev !program) id with
-      | Decl ((_, ty), _, _) | GDecl (_, ty) ->
+      | Param ((_, ty), _, _) | Decl ((_, ty), _, _) | GDecl (_, ty) ->
           let dsl = get_declspec ty in
           if not (List.mem ScsTypedef dsl) then Some id else None
       | _ -> None)

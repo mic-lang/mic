@@ -128,14 +128,15 @@ and gen_expr = function
   | EConst v -> gen_value v
   | EVar (id, _) -> (
       match List.nth (List.rev !Env.program) id with
+      | Param ((name, _), _, _)
       | Decl ((name, _), _, _)
       | GDecl (name, _)
       | LDecl (_, (name, _))
       | VarDef ((name, _), _, _, _)
       | GVarDef ((name, _), _)
-      | FunctionDef ((name, _), _) ->
+      | FunctionDef ((name, _), _, _) ->
           name
-      | LFunctionDef (_, (name, _), _) -> name
+      | LFunctionDef (_, (name, _), _, _) -> name
       | _ -> failwith "gen_expr")
   | EBinary (bin, lhs, rhs) ->
       "(" ^ gen_expr lhs ^ " " ^ gen_binop bin ^ " " ^ gen_expr rhs ^ ")"
@@ -185,8 +186,8 @@ let rec gen_stmt nest = function
         (List.map
            (fun id -> gen_item nest (List.nth (List.rev !Env.program) id))
            l)
-  | SStmts (_, []) -> ""
-  | SStmts (_, l) ->
+  | SUnsafe [] | SStmts (_, []) -> ""
+  | SUnsafe l | SStmts (_, l) ->
       ("{\n" |> gen_ident nest)
       ^ String.concat ""
           (List.map (fun stmt -> gen_stmt (nest + 1) stmt ^ "\n") l)
@@ -240,9 +241,9 @@ and gen_item_global = function
   | GDecl (name, ty) | LDecl (_, (name, ty)) -> gen_decl 0 name ty ^ ";" ^ "\n"
   | GVarDef ((name, ty), init) ->
       gen_decl 0 name ty ^ " = " ^ gen_init init ^ ";" ^ "\n"
-  | FunctionDef ((name, ty), stmt) ->
+  | FunctionDef ((name, ty), _, stmt) ->
       "\n" ^ gen_decl 0 name ty ^ " " ^ gen_stmt 0 stmt ^ "\n"
-  | LFunctionDef (_, (name, ty), stmt) ->
+  | LFunctionDef (_, (name, ty), _, stmt) ->
       "\n" ^ gen_decl 0 name ty ^ " " ^ gen_stmt 0 stmt ^ "\n"
   | _ -> ""
 

@@ -42,6 +42,7 @@ type unary = Inc | Dec | Plus | Minus | BitNot | LogNot | Ref | Deref | Sizeof
 type 'expr item =
   | Block of string * int
   | Kind of string
+  | Param of 'expr decl * depth * ownership ref
   | Decl of 'expr decl * depth * ownership ref
   | GDecl of 'expr decl
   | LDecl of lparam list * 'expr decl
@@ -53,8 +54,9 @@ type 'expr item =
   | StructDef of string * lparam list * 'expr decl list
   | UnionDef of string * lparam list * 'expr decl list
   | EnumDef of string * (string * int) list
-  | FunctionDef of 'expr decl * 'expr stmt
-  | LFunctionDef of lparam list * 'expr decl * 'expr stmt
+  | FunctionDef of 'expr decl * (ownership ref * string) list * 'expr stmt
+  | LFunctionDef of
+      lparam list * 'expr decl * (ownership ref * string) list * 'expr stmt
 [@@deriving show]
 
 and id = int [@@deriving show]
@@ -101,6 +103,7 @@ and 'expr design =
 
 and 'expr stmt =
   | SDef of id list
+  | SUnsafe of 'expr stmt list
   | SStmts of depth * 'expr stmt list
   | SWhile of 'expr * 'expr stmt
   | SDoWhile of 'expr stmt * 'expr

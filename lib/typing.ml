@@ -274,7 +274,9 @@ let rec type_expr is_unsafe env = function
       | _ -> EConst (Syntax.TDeclSpec [ TsInt ], v))
   | Syntax.EVar (id, largs) -> (
       match List.nth (List.rev !Env.program) id with
-      | Decl (decl, depth, ownership) | VarDef (decl, _, depth, ownership) ->
+      | Param (decl, depth, ownership)
+      | Decl (decl, depth, ownership)
+      | VarDef (decl, _, depth, ownership) ->
           (*print_endline (fst decl);*)
           let ty =
             Syntax.TVar
@@ -288,7 +290,7 @@ let rec type_expr is_unsafe env = function
           in
           if not is_unsafe then used_var_type env ty;
           EVar (ty, id, [])
-      | GDecl decl | GVarDef (decl, _) | FunctionDef (decl, _) ->
+      | GDecl decl | GVarDef (decl, _) | FunctionDef (decl, _, _) ->
           (*print_endline (fst decl);*)
           let ty =
             Syntax.TVar
@@ -302,7 +304,7 @@ let rec type_expr is_unsafe env = function
           in
           if not is_unsafe then used_var_type env ty;
           EVar (ty, id, [])
-      | LFunctionDef (lparams, decl, _) | LDecl (lparams, decl) ->
+      | LFunctionDef (lparams, decl, _, _) | LDecl (lparams, decl) ->
           (*print_endline (fst decl);*)
           let ty =
             Syntax.TVar
@@ -710,6 +712,7 @@ let rec type_stmt is_unsafe env =
       in
       List.iter f l;
       SDef l
+  | SUnsafe stmts -> SUnsafe (List.map (type_stmt true env) stmts)
   | SStmts (d, stmts) ->
       SStmts (d, List.map (type_stmt is_unsafe (d :: env)) stmts)
   | SWhile (expr, stmt) ->
@@ -740,12 +743,23 @@ let rec type_stmt is_unsafe env =
   | SDefault stmts -> SDefault (List.map (type_stmt is_unsafe env) stmts)
   | SExpr expr -> SExpr (Option.map (type_expr is_unsafe env) expr)
 
+let check_droped_params ownerships =
+  let open Syntax in
+  let check = function
+    | { contents = Has }, _ -> ()
+    | _, name -> failwith (name ^ " dropped")
+  in
+  List.iter check ownerships
+
 let rec type_program =
   let open Syntax in
   function
   | [] -> []
   | Block (d, n) :: xs -> Block (d, n) :: type_program xs
   | Kind n :: xs -> Kind n :: type_program xs
+  | Param ((n, ty), d, own) :: xs ->
+      check_ty ty;
+      Param ((n, type_conv ty), d, own) :: type_program xs
   | Decl ((n, ty), d, own) :: xs ->
       check_ty ty;
       Decl ((n, type_conv ty), d, own) :: type_program xs
@@ -773,12 +787,19 @@ let rec type_program =
       UnionDef (n, lp, List.map (fun (n, ty) -> (n, type_conv ty)) l)
       :: type_program xs
   | EnumDef (n, l) :: xs -> EnumDef (n, l) :: type_program xs
-  | FunctionDef ((n, ty), stmt) :: xs ->
-      FunctionDef ((n, type_conv ty), type_stmt false [] stmt)
-      :: type_program xs
-  | LFunctionDef (lparams, (n, ty), stmt) :: xs ->
-      LFunctionDef
-        ( lparams,
-          (n, type_conv ty),
-          type_stmt false (Syntax.filter_depth lparams) stmt )
-      :: type_program xs
+  | FunctionDef ((n, ty), ownerships, stmt) :: xs ->
+      let item =
+        FunctionDef ((n, type_conv ty), ownerships, type_stmt false [] stmt)
+      in
+      check_droped_params ownerships;
+      item :: type_program xs
+  | LFunctionDef (lparams, (n, ty), ownerships, stmt) :: xs ->
+      let item =
+        LFunctionDef
+          ( lparams,
+            (n, type_conv ty),
+            ownerships,
+            type_stmt false (Syntax.filter_depth lparams) stmt )
+      in
+      check_droped_params ownerships;
+      item :: type_program xs

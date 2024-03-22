@@ -78,6 +78,7 @@ rule token = parse
 | "lifetime"  { LIFETIME }
 | "depth"     { DEPTH }
 | "kind"      { KIND }
+| "unsafe"    { UNSAFE }
 | '+'         { PLUS }
 | "++"        { INC }
 | '-'         { MINUS }

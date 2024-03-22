@@ -1,5 +1,6 @@
 lifetime <depth p, depth q, kind a>
-static struct X<p, a> func(struct X<p,a> c, int b) using r {
+static struct X<p, a> func(struct X<p,a> c, int p* b) using r {
+    b;
     struct X<static, dyn>* y;
     struct Y {int x;int y;};
     return (struct X<p,dyn>){0};
@@ -22,6 +23,14 @@ extern int printf(const char *, ...);
 lifetime <depth p>
 extern void p dyn* malloc(depth p, int size);  
 
+lifetime <depth p>
+void sub(int p* a, int p* b) {
+    unsafe {
+        a = b;
+    }
+    return;
+}
+
 int main () using p {
     func<p,p,static>;;
     struct X<p, dyn> *const b = func<p,p, dyn>((struct X<p,dyn>){.x=0});
@@ -29,10 +38,12 @@ int main () using p {
     struct Y p* a;
     int a;
     struct Y{int p* a;} p auto* b = &a;
-    using q{
-        malloc<q>(q, 4);
+    using q {
+        int q dyn* y = malloc<q>(q, 4);
     }
-    //a;
+    unsafe {
+        a;
+    }
     //&5;
     func<static,static,auto>;
     int c[4];

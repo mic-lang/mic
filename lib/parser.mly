@@ -8,6 +8,12 @@ type declarator =
 | DeclArr of declarator * expr
 | DeclFun of declarator * expr decl list
 
+let rec get_ident = function
+| DeclPtr(d,_,_,_) -> get_ident d
+| DeclIdent name -> name
+| DeclArr(d,_) -> get_ident d 
+| DeclFun(d,_) -> get_ident d
+
 let make_decl ty d = 
   let name = ref "" in
   let rec aux ty = function
@@ -53,7 +59,7 @@ let conv_ident = function
 %token XOR_EQ "^=" OR_EQ "|="
 %token TYPEDEF EXTERN STATIC AUTO REGISTER
 %token TCHAR TSHORT TINT TLONG TSIGNED TUNSIGNED TFLOAT TDOUBLE CONST VOLATILE TVOID
-%token STRUCT UNION ENUM 
+%token STRUCT UNION ENUM UNSAFE
 %token CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
 %token DYN DROP USING DEPTH KIND LIFETIME
 
@@ -397,7 +403,9 @@ parameter_list:
 
 parameter_decl:
 | DEPTH DEPTH_ID                          { [($2, TBlock)] }
-| decl_specs declarator                   { [make_decl $1 $2] }
+| decl_specs declarator                   { let ownership = ref Has in push_ownerships_in_params (ownership, get_ident $2);
+                                            ignore (push_def (Param(make_decl $1 $2, lookup_last_depth (), ownership)));
+                                            [make_decl $1 $2] }
 | decl_specs abstract_declarator?         { match $2 with
                                             | Some d -> [make_decl $1 d]
                                             | None ->
@@ -461,12 +469,16 @@ item:
 | compound_stmt                           { $1 }
 
 stmt:
+| unsafe_stmt                             { $1 }
 | labeled_stmt                            { $1 }
 | expr? ";"                               { SExpr $1 }
 | selection_stmt_1                        { $1 }
 | selection_stmt_2                        { $1 }
 | iteration_stmt                          { $1 }
 | jump_stmt                               { $1 }
+
+unsafe_stmt:
+| UNSAFE  "{" list(item) "}"              { SUnsafe($3) }
 
 labeled_stmt:
 | ident ":" item                          { SLabel($1,$3) }
@@ -527,7 +539,7 @@ ldecl:
 | lifetime_declaration decl_specs enter_scope_first enter_scope declarator leave_scope leave_scope_last { LDecl($1, make_decl $2 $5) }
 
 function_def:
-| decl_specs enter_scope declarator no_depth "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts(Depth(fst $4, snd $4), $6)) }
-| decl_specs enter_scope declarator using_depth "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, SStmts(Depth(fst $4, snd $4), $6)) }
-| lifetime_declaration decl_specs enter_scope_first enter_scope declarator no_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef($1, make_decl $2 $5, SStmts(Depth(fst $6, snd $6), $8)) }
-| lifetime_declaration decl_specs enter_scope_first enter_scope declarator using_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef($1, make_decl $2 $5, SStmts(Depth(fst $6, snd $6), $8)) }
+| decl_specs enter_scope declarator no_depth "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, $8, SStmts(Depth(fst $4, snd $4), $6)) }
+| decl_specs enter_scope declarator using_depth "{" list(item) "}" leave_scope    { FunctionDef(make_decl $1 $3, $8, SStmts(Depth(fst $4, snd $4), $6)) }
+| lifetime_declaration decl_specs enter_scope_first enter_scope declarator no_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef($1, make_decl $2 $5, $10, SStmts(Depth(fst $6, snd $6), $8)) }
+| lifetime_declaration decl_specs enter_scope_first enter_scope declarator using_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef($1, make_decl $2 $5, $10, SStmts(Depth(fst $6, snd $6), $8)) }
