@@ -52,6 +52,7 @@ let rec type_conv =
   | TFun (ty, decl) ->
       TPtr
         {
+          pointee_ownership = ref Has;
           pointee_ty =
             TFun (type_conv ty, List.map (fun (n, ty) -> (n, type_conv ty)) decl);
           pointee_depth = Global;
@@ -61,6 +62,7 @@ let rec type_conv =
   | TArr (ty, _) ->
       TPtr
         {
+          pointee_ownership = ref Has;
           pointee_ty = type_conv ty;
           pointee_depth = Decayed;
           pointee_kind = Unknown;
@@ -68,6 +70,7 @@ let rec type_conv =
         }
   | TPtr
       {
+        pointee_ownership = ownership;
         pointee_ty = TFun (ty, decl);
         pointee_depth = depth;
         pointee_kind = kind;
@@ -75,6 +78,7 @@ let rec type_conv =
       } ->
       TPtr
         {
+          pointee_ownership = ownership;
           pointee_ty =
             TFun (type_conv ty, List.map (fun (n, ty) -> (n, type_conv ty)) decl);
           pointee_depth = depth;
@@ -83,6 +87,7 @@ let rec type_conv =
         }
   | TPtr
       {
+        pointee_ownership = ownership;
         pointee_ty = ty;
         pointee_depth = depth;
         pointee_kind = kind;
@@ -90,6 +95,7 @@ let rec type_conv =
       } ->
       TPtr
         {
+          pointee_ownership = ownership;
           pointee_ty = type_conv ty;
           pointee_depth = depth;
           pointee_kind = kind;
@@ -191,6 +197,7 @@ let rec apply subst =
       TFun (apply subst ty, List.map (fun (n, ty) -> (n, apply subst ty)) params)
   | TPtr
       {
+        pointee_ownership = ownership;
         pointee_ty = ty;
         pointee_depth = depth;
         pointee_kind = kind;
@@ -198,6 +205,7 @@ let rec apply subst =
       } ->
       TPtr
         {
+          pointee_ownership = ownership;
           pointee_ty = apply subst ty;
           pointee_depth = apply_depth subst depth;
           pointee_kind = apply_kind subst kind;
@@ -206,6 +214,7 @@ let rec apply subst =
   | TArr (ty, _) ->
       TPtr
         {
+          pointee_ownership = ref Has;
           pointee_ty = apply subst ty;
           pointee_depth = Decayed;
           pointee_kind = Unknown;
@@ -265,6 +274,7 @@ let rec type_expr is_unsafe env = function
           EConst
             ( Syntax.TPtr
                 {
+                  pointee_ownership = ref Syntax.Has;
                   pointee_ty = TDeclSpec [ TsChar ];
                   pointee_depth = Global;
                   pointee_kind = Static;
@@ -355,8 +365,9 @@ let rec type_expr is_unsafe env = function
             type_init is_unsafe env (type_conv (get_expr_ty lhs)) init )
       in
       (if not is_unsafe then
-         match (get_expr_ty lhs, get_expr_ty rhs) with
-         | TVar { var_depth = depth; _ }, TVar { ownership; _ } ->
+         match (get_expr_ty lhs, Syntax.get_contents_ty (get_expr_ty rhs)) with
+         | ( TVar { var_depth = depth; _ },
+             TPtr { pointee_ownership = ownership; _ } ) ->
              ownership := Moved depth
              (*print_endline ("ownership:" ^ show_ty (get_expr_ty rhs))*)
          | _ -> ());
@@ -374,8 +385,9 @@ let rec type_expr is_unsafe env = function
       let lhs = type_expr is_unsafe env lhs in
       let rhs = type_expr is_unsafe env rhs in
       (if not is_unsafe then
-         match (get_expr_ty lhs, get_expr_ty rhs) with
-         | TVar { var_depth = depth; _ }, TVar { ownership; _ } ->
+         match (get_expr_ty lhs, Syntax.get_contents_ty (get_expr_ty rhs)) with
+         | ( TVar { var_depth = depth; _ },
+             TPtr { pointee_ownership = ownership; _ } ) ->
              ownership := Moved depth
          (*print_endline ("ownership:" ^ show_ty (get_expr_ty rhs))*)
          | _ -> ());
@@ -406,20 +418,13 @@ let rec type_expr is_unsafe env = function
             var_qual = qual;
           } ->
           EUnary
-            ( TVar
+            ( TPtr
                 {
-                  ownership;
-                  var_ty =
-                    TPtr
-                      {
-                        pointee_ty = ty;
-                        pointee_depth = depth;
-                        pointee_kind = kind;
-                        pointee_qual = qual;
-                      };
-                  var_depth = depth;
-                  var_kind = kind;
-                  var_qual = qual;
+                  pointee_ownership = ownership;
+                  pointee_ty = ty;
+                  pointee_depth = depth;
+                  pointee_kind = kind;
+                  pointee_qual = qual;
                 },
               Ref,
               expr )
@@ -429,6 +434,7 @@ let rec type_expr is_unsafe env = function
       match Syntax.get_contents_ty (get_expr_ty expr) with
       | TPtr
           {
+            pointee_ownership = ownership;
             pointee_ty = ty;
             pointee_depth = depth;
             pointee_kind = kind;
@@ -437,7 +443,7 @@ let rec type_expr is_unsafe env = function
           EUnary
             ( TVar
                 {
-                  ownership = ref Syntax.Has;
+                  ownership;
                   var_ty = ty;
                   var_depth = depth;
                   var_kind = kind;
@@ -606,8 +612,9 @@ and type_init is_unsafe env ty init =
   | Syntax.IScal expr ->
       let rhs = type_expr is_unsafe env expr in
       (if not is_unsafe then
-         match (ty, get_expr_ty rhs) with
-         | TVar { var_depth = depth; _ }, TVar { ownership; _ } ->
+         match (ty, Syntax.get_contents_ty (get_expr_ty rhs)) with
+         | ( TVar { var_depth = depth; _ },
+             TPtr { pointee_ownership = ownership; _ } ) ->
              ownership := Moved depth
              (*print_endline ("ownership:" ^ show_ty (get_expr_ty rhs))*)
          | _ -> ());
@@ -742,13 +749,23 @@ let rec type_stmt is_unsafe env =
   | SDefault stmts -> SDefault (List.map (type_stmt is_unsafe env) stmts)
   | SExpr expr -> SExpr (Option.map (type_expr is_unsafe env) expr)
 
-let check_droped_params ownerships =
+let check_droped_params decls =
   let open Syntax in
-  let check = function
-    | { contents = Has }, _ -> ()
-    | _, name -> failwith (name ^ " dropped")
+  let rec check n name = function
+    | TPtr
+        {
+          pointee_ownership = ownership;
+          pointee_ty = ty;
+          pointee_qual = qual;
+          _;
+        } -> (
+        match !ownership with
+        | Has -> check (n + 1) name ty
+        | _ when List.mem Drop qual -> ()
+        | _ -> failwith (String.make n '*' ^ name ^ " dropped"))
+    | _ -> ()
   in
-  List.iter check ownerships
+  List.iter (fun (name, ty) -> check 0 name ty) decls
 
 let rec type_program =
   let open Syntax in
@@ -786,19 +803,22 @@ let rec type_program =
       UnionDef (n, lp, List.map (fun (n, ty) -> (n, type_conv ty)) l)
       :: type_program xs
   | EnumDef (n, l) :: xs -> EnumDef (n, l) :: type_program xs
-  | FunctionDef ((n, ty), ownerships, stmt) :: xs ->
+  | FunctionDef ((n, ty), decls, stmt) :: xs ->
       let item =
-        FunctionDef ((n, type_conv ty), ownerships, type_stmt false [] stmt)
+        FunctionDef
+          ( (n, type_conv ty),
+            List.map (fun (n, ty) -> (n, type_conv ty)) decls,
+            type_stmt false [] stmt )
       in
-      check_droped_params ownerships;
+      check_droped_params decls;
       item :: type_program xs
-  | LFunctionDef (lparams, (n, ty), ownerships, stmt) :: xs ->
+  | LFunctionDef (lparams, (n, ty), decls, stmt) :: xs ->
       let item =
         LFunctionDef
           ( lparams,
             (n, type_conv ty),
-            ownerships,
+            List.map (fun (n, ty) -> (n, type_conv ty)) decls,
             type_stmt false (Syntax.filter_depth lparams) stmt )
       in
-      check_droped_params ownerships;
+      check_droped_params decls;
       item :: type_program xs

@@ -54,9 +54,8 @@ type 'expr item =
   | StructDef of string * lparam list * 'expr decl list
   | UnionDef of string * lparam list * 'expr decl list
   | EnumDef of string * (string * int) list
-  | FunctionDef of 'expr decl * (ownership ref * string) list * 'expr stmt
-  | LFunctionDef of
-      lparam list * 'expr decl * (ownership ref * string) list * 'expr stmt
+  | FunctionDef of 'expr decl * 'expr decl list * 'expr stmt
+  | LFunctionDef of lparam list * 'expr decl * 'expr decl list * 'expr stmt
 [@@deriving show]
 
 and id = int [@@deriving show]
@@ -163,7 +162,7 @@ and lparam = LBlock of depth | LKind of kind [@@deriving show]
 and depths = depth list [@@deriving show]
 
 and 'expr pointer = {
-  (*pointee_ownership : ownership ref;*)
+  pointee_ownership : ownership ref;
   pointee_ty : 'expr ty;
   pointee_depth : depth;
   pointee_kind : kind;

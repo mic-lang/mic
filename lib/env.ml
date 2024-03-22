@@ -24,8 +24,8 @@ let map_to_lparam l =
 let get_scope () = map_to_program !curr_scope
 let get_stack () = map_to_program (List.flatten (!curr_scope :: !stack))
 let get_lscope () = map_to_lparam !lscope
-let ownerships : (ownership ref * string) list ref = ref []
-let push_ownerships_in_params ownership = ownerships := ownership :: !ownerships
+let decls : expr decl list ref = ref []
+let push_decl_in_params decl = decls := decl :: !decls
 
 let push_lparam lparam =
   let id = List.length !lparams in
@@ -58,8 +58,8 @@ let leave_scope () =
   curr_scope := List.hd !stack;
   stack := List.tl !stack;
   decr curr_depth;
-  let ret = !ownerships in
-  ownerships := [];
+  let ret = !decls in
+  decls := [];
   ret
 
 let enter_scope_first () =

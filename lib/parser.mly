@@ -8,16 +8,11 @@ type declarator =
 | DeclArr of declarator * expr
 | DeclFun of declarator * expr decl list
 
-let rec get_ident = function
-| DeclPtr(d,_,_,_) -> get_ident d
-| DeclIdent name -> name
-| DeclArr(d,_) -> get_ident d 
-| DeclFun(d,_) -> get_ident d
-
 let make_decl ty d = 
   let name = ref "" in
   let rec aux ty = function
     | DeclPtr (d, dep, kind, qual) -> aux (TPtr {
+                  pointee_ownership = ref Has;
                   pointee_ty = ty;
                   pointee_depth = dep;
                   pointee_kind = kind;
@@ -403,8 +398,8 @@ parameter_list:
 
 parameter_decl:
 | DEPTH DEPTH_ID                          { [($2, TBlock)] }
-| decl_specs declarator                   { let ownership = ref Has in push_ownerships_in_params (ownership, get_ident $2);
-                                            ignore (push_def (Param(make_decl $1 $2, lookup_last_depth (), ownership)));
+| decl_specs declarator                   { let decl = make_decl $1 $2 in push_decl_in_params decl;
+                                            ignore (push_def (Param(decl, lookup_last_depth (), ref Has)));
                                             [make_decl $1 $2] }
 | decl_specs abstract_declarator?         { match $2 with
                                             | Some d -> [make_decl $1 d]

@@ -24,10 +24,8 @@ lifetime <depth p>
 extern void p dyn* malloc(depth p, int size);  
 
 lifetime <depth p>
-void sub(int p* a, int p* b) {
-    unsafe {
-        a = b;
-    }
+void sub(int p* drop a, int p* p* b) {
+    b = a;
     return;
 }
 
@@ -44,6 +42,7 @@ int main () using p {
     unsafe {
         a;
     }
+    
     //&5;
     func<static,static,auto>;
     int c[4];
