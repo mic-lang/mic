@@ -79,6 +79,7 @@ rule token = parse
 | "depth"     { DEPTH }
 | "kind"      { KIND }
 | "unsafe"    { UNSAFE }
+| "null"      { NULL }
 | '+'         { PLUS }
 | "++"        { INC }
 | '-'         { MINUS }

@@ -57,10 +57,7 @@ let enter_scope () =
 let leave_scope () =
   curr_scope := List.hd !stack;
   stack := List.tl !stack;
-  decr curr_depth;
-  let ret = !decls in
-  decls := [];
-  ret
+  decr curr_depth
 
 let enter_scope_first () =
   program := !lparams @ !program;
@@ -73,7 +70,10 @@ let leave_scope_last () =
   curr_depth := 0;
   in_lparams := false;
   lscope := [];
-  lparams := []
+  lparams := [];
+  let ret = !decls in
+  decls := [];
+  ret
 
 let update_program id def =
   program :=

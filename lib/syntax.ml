@@ -12,6 +12,7 @@ type value =
   | VInt of string
   | VFloat of string
   | VStr of string
+  | VNull
 [@@deriving show]
 
 type binary =

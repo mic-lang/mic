@@ -123,6 +123,7 @@ and gen_value = function
   | VChar str -> "'" ^ str ^ "'"
   | VInt str | VFloat str -> str
   | VStr str -> "\"" ^ str ^ "\""
+  | VNull -> "NULL"
 
 and gen_expr = function
   | EConst v -> gen_value v

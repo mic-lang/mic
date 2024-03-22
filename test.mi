@@ -23,11 +23,7 @@ extern int printf(const char *, ...);
 lifetime <depth p>
 extern void p dyn* malloc(depth p, int size);  
 
-lifetime <depth p>
-void sub(int p* drop a, int p* p* b) {
-    b = a;
-    return;
-}
+
 
 int main () using p {
     func<p,p,static>;;
@@ -65,6 +61,15 @@ label :
     }
 return 0;
 }
+
+lifetime <depth p, kind a>
+void swap(void p a* lhs, void p a* rhs) {
+    void p a* temp = lhs;
+    lhs = rhs;
+    rhs = temp;
+    return;
+}
+
 char c = '\n';
 unsigned i = 5;
 //struct X x= {.x=0,};
@@ -73,8 +78,15 @@ int* const x;
 
 typedef struct X<static,static> Z;
 Z;
-//void(*func)(int a);
 char *const ptr [4] ;
 char (*const ptrq)[4];
-void (*signal (int sig, void(*func)(int a)))(int b);
-void (*(*p)[10])(int a, int b);
+void (*signal (int, void(*)(int a)))(int);
+void (*(*g)[10])(int a, int b);
+
+
+lifetime <depth p, depth q, kind a, kind b>
+void h(void p a* lhs, void p a* q b* rhs) {
+    lhs = **rhs;
+    *rhs = null;
+    return;
+}

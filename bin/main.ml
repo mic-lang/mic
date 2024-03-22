@@ -1,4 +1,21 @@
-(*let () = print_endline "Hello, World!"*)
+let out_file fname =
+  let fnlen = String.length fname in
+  let suffix = if 3 < fnlen then String.sub fname (fnlen - 3) 3 else "" in
+  if suffix = ".mi" then Printf.sprintf "%s.c" (String.sub fname 0 (fnlen - 3))
+  else Printf.sprintf "%s.c" fname
+
+let show_pos fname filebuf =
+  let pos = filebuf.Lexing.lex_start_p in
+  Printf.eprintf "File \"%s\", line %d, character %d:\n" fname
+    pos.Lexing.pos_lnum
+    (pos.Lexing.pos_cnum - pos.Lexing.pos_bol + 1)
+
+let show_error fmt =
+  let go str =
+    Printf.eprintf "error: %s\n" str;
+    exit 1
+  in
+  Printf.ksprintf go fmt
 
 let () =
   let argc = Array.length Sys.argv in
@@ -9,13 +26,21 @@ let () =
     let fname = Sys.argv.(1) in
     let inchan = open_in fname in
     let filebuf = Lexing.from_channel inchan in
-    ignore (Mic.Parser.translation_unit Mic.Lexer.token filebuf);
-    (*print_endline
-      (Mic.Syntax.show_programi
-         (List.mapi (fun i x -> (i, x)) (List.rev !Mic.Env.program)));*)
-    print_endline
-      (Mic.Typing.show_typed_programi
-         (List.mapi
-            (fun i x -> (i, x))
-            (Mic.Typing.type_program (List.rev !Mic.Env.program))));
-    print_endline (Mic.Cgen.gen_program (List.rev !Mic.Env.program))
+    try
+      ignore (Mic.Parser.translation_unit Mic.Lexer.token filebuf);
+      (*print_endline
+        (Mic.Syntax.show_programi
+           (List.mapi (fun i x -> (i, x)) (List.rev !Mic.Env.program)));*)
+      print_endline
+        (Mic.Typing.show_typed_programi
+           (List.mapi
+              (fun i x -> (i, x))
+              (Mic.Typing.type_program (List.rev !Mic.Env.program))));
+      let program = Mic.Cgen.gen_program (List.rev !Mic.Env.program) in
+      let outchan = open_out (out_file fname) in
+      Printf.fprintf outchan "%s" program
+    with
+    | Failure msg -> show_error "%s" msg
+    | _ ->
+        show_pos fname filebuf;
+        show_error "parser: syntax error near '%s'" (Lexing.lexeme filebuf)

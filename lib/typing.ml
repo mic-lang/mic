@@ -267,6 +267,14 @@ let rec check_ty =
       List.iter f l
   | TBlock -> ()
 
+let is_compatible_ptr lptr rptr =
+  let open Syntax in
+  match (lptr, rptr) with
+  | _, { pointee_depth = Global; pointee_kind = Static; _ } -> true
+  | ( { pointee_depth = ldep; pointee_kind = lkind; _ },
+      { pointee_depth = rdep; pointee_kind = rkind; _ } ) ->
+      ldep = rdep && lkind = rkind
+
 let rec type_expr is_unsafe env = function
   | Syntax.EConst v -> (
       match v with
@@ -276,6 +284,17 @@ let rec type_expr is_unsafe env = function
                 {
                   pointee_ownership = ref Syntax.Has;
                   pointee_ty = TDeclSpec [ TsChar ];
+                  pointee_depth = Global;
+                  pointee_kind = Static;
+                  pointee_qual = [ Const ];
+                },
+              v )
+      | VNull ->
+          EConst
+            ( Syntax.TPtr
+                {
+                  pointee_ownership = ref Syntax.Has;
+                  pointee_ty = TDeclSpec [ TsVoid ];
                   pointee_depth = Global;
                   pointee_kind = Static;
                   pointee_qual = [ Const ];
@@ -376,8 +395,7 @@ let rec type_expr is_unsafe env = function
            Syntax.get_contents_ty (get_expr_ty rhs) )
        with
       | TPtr lhs, TPtr rhs
-        when lhs.pointee_depth <> rhs.pointee_depth
-             || lhs.pointee_kind <> rhs.pointee_kind ->
+        when not (is_compatible_ptr lhs rhs) ->
           failwith "pointer type mismatch"
       | _ -> ());
       EAssign (get_expr_ty lhs, bin, lhs, rhs)
@@ -396,8 +414,7 @@ let rec type_expr is_unsafe env = function
            Syntax.get_contents_ty (get_expr_ty rhs) )
        with
       | TPtr lhs, TPtr rhs
-        when lhs.pointee_depth <> rhs.pointee_depth
-             || lhs.pointee_kind <> rhs.pointee_kind ->
+        when not (is_compatible_ptr lhs rhs) ->
           failwith "pointer type mismatch"
       | _ -> ());
 
@@ -622,8 +639,7 @@ and type_init is_unsafe env ty init =
          (Syntax.get_contents_ty ty, Syntax.get_contents_ty (get_expr_ty rhs))
        with
       | TPtr lhs, TPtr rhs
-        when lhs.pointee_depth <> rhs.pointee_depth
-             || lhs.pointee_kind <> rhs.pointee_kind ->
+        when not (is_compatible_ptr lhs rhs) ->
           print_endline (Syntax.show_ty_ ty);
           failwith "pointer type mismatch"
       | _ -> ());
