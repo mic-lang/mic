@@ -394,8 +394,7 @@ let rec type_expr is_unsafe env = function
          ( Syntax.get_contents_ty (get_expr_ty lhs),
            Syntax.get_contents_ty (get_expr_ty rhs) )
        with
-      | TPtr lhs, TPtr rhs
-        when not (is_compatible_ptr lhs rhs) ->
+      | TPtr lhs, TPtr rhs when not (is_compatible_ptr lhs rhs) ->
           failwith "pointer type mismatch"
       | _ -> ());
       EAssign (get_expr_ty lhs, bin, lhs, rhs)
@@ -413,8 +412,7 @@ let rec type_expr is_unsafe env = function
          ( Syntax.get_contents_ty (get_expr_ty lhs),
            Syntax.get_contents_ty (get_expr_ty rhs) )
        with
-      | TPtr lhs, TPtr rhs
-        when not (is_compatible_ptr lhs rhs) ->
+      | TPtr lhs, TPtr rhs when not (is_compatible_ptr lhs rhs) ->
           failwith "pointer type mismatch"
       | _ -> ());
 
@@ -638,8 +636,7 @@ and type_init is_unsafe env ty init =
       (match
          (Syntax.get_contents_ty ty, Syntax.get_contents_ty (get_expr_ty rhs))
        with
-      | TPtr lhs, TPtr rhs
-        when not (is_compatible_ptr lhs rhs) ->
+      | TPtr lhs, TPtr rhs when not (is_compatible_ptr lhs rhs) ->
           print_endline (Syntax.show_ty_ ty);
           failwith "pointer type mismatch"
       | _ -> ());
