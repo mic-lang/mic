@@ -76,11 +76,11 @@ let update_program id def =
       (List.mapi (fun i x -> if i = id then def else x) (List.rev !program))
 
 let is_structdecl name = function
-  | (StructDecl (n, _)) when n = name -> true
+  | StructDecl (n, _) when n = name -> true
   | _ -> false
 
 let is_uniondecl name = function
-  | (UnionDecl (n, _)) when n = name -> true
+  | UnionDecl (n, _) when n = name -> true
   | _ -> false
 
 let is_structdef name = function
@@ -100,7 +100,6 @@ let lookup_structdecl name l = find_item (is_structdecl name) l
 let lookup_uniondecl name l = find_item (is_uniondecl name) l
 let lookup_structdef name l = find_item (is_structdef name) l
 let lookup_uniondef name l = find_item (is_uniondef name) l
-
 
 let make_structdecl name lparams =
   match lookup_structdecl name (get_stack ()) with
@@ -139,7 +138,8 @@ let make_uniondef name lparams decl =
       | None -> TsUnionDef (push_def (UnionDef (name, lparams, decl))))
 
 let is_decl name = function
-  | (Decl ((n, _), _, _) | GDecl (n, _)) when n = name -> true
+  | (Decl ((n, _), _, _) | GDecl (n, _) | LDecl (_, (n, _))) when n = name ->
+      true
   | _ -> false
 
 let lookup_decl name l = find_item (is_decl name) l
@@ -170,7 +170,7 @@ let lookup_nonlid_functiondef name =
   lookup_nonlid_functiondef name (get_stack ())
 
 let is_lid name = function
-  | LFunctionDef (_, (n, _), _) when n = name -> true
+  | (LFunctionDef (_, (n, _), _) | LDecl (_, (n, _))) when n = name -> true
   | _ -> false
 
 let lookup_lid name l = find_item (is_lid name) l

@@ -1,4 +1,4 @@
-let () = print_endline "Hello, World!"
+(*let () = print_endline "Hello, World!"*)
 
 let () =
   let argc = Array.length Sys.argv in
@@ -10,10 +10,10 @@ let () =
     let inchan = open_in fname in
     let filebuf = Lexing.from_channel inchan in
     ignore (Mic.Parser.translation_unit Mic.Lexer.token filebuf);
-    print_endline
+    (*print_endline
       (Mic.Syntax.show_programi
-         (List.mapi (fun i x -> (i, x)) (List.rev !Mic.Env.program)));
-    ignore
+         (List.mapi (fun i x -> (i, x)) (List.rev !Mic.Env.program)));*)
+    print_endline
       (Mic.Typing.show_typed_programi
          (List.mapi
             (fun i x -> (i, x))

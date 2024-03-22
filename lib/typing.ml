@@ -258,7 +258,7 @@ let rec check_ty =
       List.iter f l
   | TBlock -> ()
 
-let rec type_expr env = function
+let rec type_expr is_unsafe env = function
   | Syntax.EConst v -> (
       match v with
       | VStr _ ->
@@ -275,7 +275,7 @@ let rec type_expr env = function
   | Syntax.EVar (id, largs) -> (
       match List.nth (List.rev !Env.program) id with
       | Decl (decl, depth, ownership) | VarDef (decl, _, depth, ownership) ->
-          print_endline (fst decl);
+          (*print_endline (fst decl);*)
           let ty =
             Syntax.TVar
               {
@@ -286,10 +286,10 @@ let rec type_expr env = function
                 var_qual = [];
               }
           in
-          used_var_type env ty;
+          if not is_unsafe then used_var_type env ty;
           EVar (ty, id, [])
       | GDecl decl | GVarDef (decl, _) | FunctionDef (decl, _) ->
-          print_endline (fst decl);
+          (*print_endline (fst decl);*)
           let ty =
             Syntax.TVar
               {
@@ -300,10 +300,10 @@ let rec type_expr env = function
                 var_qual = [];
               }
           in
-          used_var_type env ty;
+          if not is_unsafe then used_var_type env ty;
           EVar (ty, id, [])
-      | LFunctionDef (lparams, decl, _) ->
-          print_endline (fst decl);
+      | LFunctionDef (lparams, decl, _) | LDecl (lparams, decl) ->
+          (*print_endline (fst decl);*)
           let ty =
             Syntax.TVar
               {
@@ -316,51 +316,84 @@ let rec type_expr env = function
           in
           let subst = unify lparams largs in
           let ty = apply subst ty in
-          used_var_type env ty;
+          if not is_unsafe then used_var_type env ty;
           EVar (ty, id, largs)
-      | item -> failwith ("type_expr env: var " ^ Syntax.show_item_ item))
+      | item ->
+          failwith ("type_expr is_unsafe env: var " ^ Syntax.show_item_ item))
   | Syntax.EBinary
       ( (( Add | Sub | Mul | Div | Mod | LShift | RShift | BitAnd | BitXor
          | BitOr ) as bin),
         lhs,
         rhs ) ->
-      let lhs = type_expr env lhs in
+      let lhs = type_expr is_unsafe env lhs in
       EBinary
-        (Syntax.get_contents_ty (get_expr_ty lhs), bin, lhs, type_expr env rhs)
+        ( Syntax.get_contents_ty (get_expr_ty lhs),
+          bin,
+          lhs,
+          type_expr is_unsafe env rhs )
   | Syntax.EBinary
       (((LogAnd | LogOr | Lt | Le | Gt | Ge | Eq | Ne) as bin), lhs, rhs) ->
-      EBinary (TDeclSpec [ TsInt ], bin, type_expr env lhs, type_expr env rhs)
-  | Syntax.EBinary (Comma, lhs, rhs) ->
-      let rhs = type_expr env rhs in
       EBinary
-        (Syntax.get_contents_ty (get_expr_ty rhs), Comma, type_expr env lhs, rhs)
+        ( TDeclSpec [ TsInt ],
+          bin,
+          type_expr is_unsafe env lhs,
+          type_expr is_unsafe env rhs )
+  | Syntax.EBinary (Comma, lhs, rhs) ->
+      let rhs = type_expr is_unsafe env rhs in
+      EBinary
+        ( Syntax.get_contents_ty (get_expr_ty rhs),
+          Comma,
+          type_expr is_unsafe env lhs,
+          rhs )
   | Syntax.EAssign (bin, lhs, Syntax.ECompoundLit (ty, init)) ->
-      let lhs = type_expr env lhs in
+      let lhs = type_expr is_unsafe env lhs in
       let rhs =
         ECompoundLit
-          (type_conv ty, type_init env (type_conv (get_expr_ty lhs)) init)
+          ( type_conv ty,
+            type_init is_unsafe env (type_conv (get_expr_ty lhs)) init )
       in
-      (match (get_expr_ty lhs, get_expr_ty rhs) with
-      | TVar { var_depth = depth; _ }, TVar { ownership; _ } ->
-          ownership := Moved depth;
-          print_endline ("ownership:" ^ show_ty (get_expr_ty rhs))
+      (if not is_unsafe then
+         match (get_expr_ty lhs, get_expr_ty rhs) with
+         | TVar { var_depth = depth; _ }, TVar { ownership; _ } ->
+             ownership := Moved depth
+             (*print_endline ("ownership:" ^ show_ty (get_expr_ty rhs))*)
+         | _ -> ());
+      (match
+         ( Syntax.get_contents_ty (get_expr_ty lhs),
+           Syntax.get_contents_ty (get_expr_ty rhs) )
+       with
+      | TPtr lhs, TPtr rhs
+        when lhs.pointee_depth <> rhs.pointee_depth
+             || lhs.pointee_kind <> rhs.pointee_kind ->
+          failwith "pointer type mismatch"
       | _ -> ());
       EAssign (get_expr_ty lhs, bin, lhs, rhs)
   | Syntax.EAssign (bin, lhs, rhs) ->
-      let lhs = type_expr env lhs in
-      let rhs = type_expr env rhs in
-      (match (get_expr_ty lhs, get_expr_ty rhs) with
-      | TVar { var_depth = depth; _ }, TVar { ownership; _ } ->
-          ownership := Moved depth;
-          print_endline ("ownership:" ^ show_ty (get_expr_ty rhs))
+      let lhs = type_expr is_unsafe env lhs in
+      let rhs = type_expr is_unsafe env rhs in
+      (if not is_unsafe then
+         match (get_expr_ty lhs, get_expr_ty rhs) with
+         | TVar { var_depth = depth; _ }, TVar { ownership; _ } ->
+             ownership := Moved depth
+         (*print_endline ("ownership:" ^ show_ty (get_expr_ty rhs))*)
+         | _ -> ());
+      (match
+         ( Syntax.get_contents_ty (get_expr_ty lhs),
+           Syntax.get_contents_ty (get_expr_ty rhs) )
+       with
+      | TPtr lhs, TPtr rhs
+        when lhs.pointee_depth <> rhs.pointee_depth
+             || lhs.pointee_kind <> rhs.pointee_kind ->
+          failwith "pointer type mismatch"
       | _ -> ());
+
       EAssign (get_expr_ty lhs, bin, lhs, rhs)
   | Syntax.EUnary (((Inc | Dec | Plus | Minus | BitNot | LogNot) as un), expr)
     ->
-      let expr = type_expr env expr in
+      let expr = type_expr is_unsafe env expr in
       EUnary (get_expr_ty expr, un, expr)
   | Syntax.EUnary (Ref, expr) -> (
-      let expr = type_expr env expr in
+      let expr = type_expr is_unsafe env expr in
       match get_expr_ty expr with
       | TVar
           {
@@ -390,7 +423,7 @@ let rec type_expr env = function
               expr )
       | _ -> failwith "not lvalue")
   | Syntax.EUnary (Deref, expr) -> (
-      let expr = type_expr env expr in
+      let expr = type_expr is_unsafe env expr in
       match get_expr_ty expr with
       | TVar
           {
@@ -411,16 +444,16 @@ let rec type_expr env = function
                 },
               Deref,
               expr )
-      | ty -> failwith ("type_expr env : deref " ^ show_ty ty))
+      | ty -> failwith ("type_expr is_unsafe env : deref " ^ show_ty ty))
   | Syntax.EUnary (Sizeof, expr) ->
-      EUnary (TDeclSpec [ TsInt ], Sizeof, type_expr env expr)
+      EUnary (TDeclSpec [ TsInt ], Sizeof, type_expr is_unsafe env expr)
   | Syntax.ESizeof ty -> ESizeof (TDeclSpec [ TsInt ], type_conv ty)
   | Syntax.EPostfix (expr, PCall args) -> (
-      let expr = type_expr env expr in
+      let expr = type_expr is_unsafe env expr in
       let args =
         List.map
           (function
-            | Syntax.AExpr expr -> Syntax.AExpr (type_expr env expr)
+            | Syntax.AExpr expr -> Syntax.AExpr (type_expr is_unsafe env expr)
             | Syntax.ADepth depth -> Syntax.ADepth depth)
           args
       in
@@ -431,9 +464,9 @@ let rec type_expr env = function
       | TFun (ret, _) -> EPostfix (ret, expr, PCall args)
       | _ ->
           print_endline (show_ty (type_conv (get_expr_ty expr)));
-          failwith "type_expr env")
+          failwith "type_expr is_unsafe env")
   | Syntax.EPostfix (expr, PIdx idx) -> (
-      let expr = type_expr env expr in
+      let expr = type_expr is_unsafe env expr in
       match get_expr_ty expr with
       | TVar
           {
@@ -453,10 +486,10 @@ let rec type_expr env = function
                   var_qual = qual;
                 },
               expr,
-              PIdx (type_expr env idx) )
-      | ty -> failwith ("type_expr env : idx " ^ show_ty ty))
+              PIdx (type_expr is_unsafe env idx) )
+      | ty -> failwith ("type_expr is_unsafe env : idx " ^ show_ty ty))
   | Syntax.EPostfix (expr, PDot name) -> (
-      let expr = type_expr env expr in
+      let expr = type_expr is_unsafe env expr in
       match get_expr_ty expr with
       | TVar
           {
@@ -480,7 +513,7 @@ let rec type_expr env = function
                     },
                   expr,
                   PDot name )
-          | _ -> failwith "type_expr env: dot")
+          | _ -> failwith "type_expr is_unsafe env: dot")
       | TVar
           {
             ownership;
@@ -502,10 +535,10 @@ let rec type_expr env = function
                     },
                   expr,
                   PDot name )
-          | _ -> failwith "type_expr env: dot")
-      | _ -> failwith "type_expr env: dot")
+          | _ -> failwith "type_expr is_unsafe env: dot")
+      | _ -> failwith "type_expr is_unsafe env: dot")
   | Syntax.EPostfix (expr, PArrow name) -> (
-      let expr = type_expr env expr in
+      let expr = type_expr is_unsafe env expr in
       match get_expr_ty expr with
       | TVar
           {
@@ -532,7 +565,7 @@ let rec type_expr env = function
                         },
                       expr,
                       PArrow name )
-              | _ -> failwith "type_expr env: arrow")
+              | _ -> failwith "type_expr is_unsafe env: arrow")
           | TDeclSpec [ (TsStructDef id | TsUnionDef id) ] -> (
               match List.nth (List.rev !Env.program) id with
               | StructDef (_, [], mems) | UnionDef (_, [], mems) ->
@@ -547,34 +580,44 @@ let rec type_expr env = function
                         },
                       expr,
                       PArrow name )
-              | _ -> failwith "type_expr env: arrow")
-          | _ -> failwith "type_expr env: not a compound type")
+              | _ -> failwith "type_expr is_unsafe env: arrow")
+          | _ -> failwith "type_expr is_unsafe env: not a compound type")
       | _ ->
           print_endline (show_ty (Syntax.get_base_ty (get_expr_ty expr)));
-          failwith "type_expr env: arrow")
+          failwith "type_expr is_unsafe env: arrow")
   | Syntax.EPostfix (expr, ((PInc | PDec) as postfix)) ->
       EPostfix
-        ( Syntax.get_contents_ty (get_expr_ty (type_expr env expr)),
-          type_expr env expr,
+        ( Syntax.get_contents_ty (get_expr_ty (type_expr is_unsafe env expr)),
+          type_expr is_unsafe env expr,
           postfix )
   | Syntax.ECond (cond, lhs, rhs) ->
       ECond
-        ( Syntax.get_contents_ty (get_expr_ty (type_expr env lhs)),
-          type_expr env cond,
-          type_expr env lhs,
-          type_expr env rhs )
-  | Syntax.ECast (ty, expr) -> ECast (type_conv ty, type_expr env expr)
+        ( Syntax.get_contents_ty (get_expr_ty (type_expr is_unsafe env lhs)),
+          type_expr is_unsafe env cond,
+          type_expr is_unsafe env lhs,
+          type_expr is_unsafe env rhs )
+  | Syntax.ECast (ty, expr) -> ECast (type_conv ty, type_expr is_unsafe env expr)
   | Syntax.ECompoundLit (ty, init) ->
-      ECompoundLit (type_conv ty, type_init env (type_conv ty) init)
+      ECompoundLit (type_conv ty, type_init is_unsafe env (type_conv ty) init)
 
-and type_init env ty init =
+and type_init is_unsafe env ty init =
   match init with
   | Syntax.IScal expr ->
-      let rhs = type_expr env expr in
-      (match (ty, get_expr_ty rhs) with
-      | TVar { var_depth = depth; _ }, TVar { ownership; _ } ->
-          ownership := Moved depth;
-          print_endline ("ownership:" ^ show_ty (get_expr_ty rhs))
+      let rhs = type_expr is_unsafe env expr in
+      (if not is_unsafe then
+         match (ty, get_expr_ty rhs) with
+         | TVar { var_depth = depth; _ }, TVar { ownership; _ } ->
+             ownership := Moved depth
+             (*print_endline ("ownership:" ^ show_ty (get_expr_ty rhs))*)
+         | _ -> ());
+      (match
+         (Syntax.get_contents_ty ty, Syntax.get_contents_ty (get_expr_ty rhs))
+       with
+      | TPtr lhs, TPtr rhs
+        when lhs.pointee_depth <> rhs.pointee_depth
+             || lhs.pointee_kind <> rhs.pointee_kind ->
+          print_endline (Syntax.show_ty_ ty);
+          failwith "pointer type mismatch"
       | _ -> ());
       Syntax.IScal rhs
   | Syntax.IVect l -> (
@@ -584,65 +627,68 @@ and type_init env ty init =
           let rec aux = function
             | [] -> []
             | (design, init) :: xs ->
-                let ty, design = type_design env ty design loc in
-                (design, type_init env ty init) :: aux xs
+                let ty, design = type_design is_unsafe env ty design loc in
+                (design, type_init is_unsafe env ty init) :: aux xs
           in
           IVect (aux l)
       | Syntax.TDeclSpec [ (TsStruct (id, _) | TsStructDef id) ] ->
           let mems =
             match List.nth (List.rev !Env.program) id with
             | StructDef (_, _, mems) -> mems
-            | _ -> failwith "type_init env"
+            | _ -> failwith "type_init is_unsafe env"
           in
           let rec aux loc mems l =
             match (mems, l) with
             | _, [] -> []
-            | [], _ -> failwith "type_init env: excess elements"
+            | [], _ -> failwith "type_init is_unsafe env: excess elements"
             | (_, memty) :: _, (design, init) :: xs ->
                 let memty, design =
                   match design with
                   | Syntax.Dnone ->
                       loc := !loc + 1;
                       (type_conv memty, Syntax.Dnone)
-                  | _ -> type_design env (type_conv ty) design loc
+                  | _ -> type_design is_unsafe env (type_conv ty) design loc
                 in
                 let rec remain_mems mems x =
                   match (mems, x) with
                   | mems, 0 -> mems
-                  | [], _ -> failwith "type_init env error: excess elements"
+                  | [], _ ->
+                      failwith "type_init is_unsafe env error: excess elements"
                   | _ :: mems, x -> remain_mems mems (x - 1)
                 in
-                (design, type_init env memty init)
+                (design, type_init is_unsafe env memty init)
                 :: aux loc (remain_mems mems !loc) xs
           in
           IVect (aux loc mems l)
-      | _ -> failwith "type_init env: invalid type or initializer")
+      | _ -> failwith "type_init is_unsafe env: invalid type or initializer")
 
-and type_design env ty design loc =
+and type_design is_unsafe env ty design loc =
   match (ty, design) with
   | Syntax.TArr (ty, _), DIdx (expr, design) ->
-      let ty, design = type_design env ty design loc in
-      (ty, DIdx (type_expr env expr, design))
+      let ty, design = type_design is_unsafe env ty design loc in
+      (ty, DIdx (type_expr is_unsafe env expr, design))
   | Syntax.TDeclSpec [ TsStruct (id, _) ], DField (name, design) ->
       let mems =
         match List.nth (List.rev !Env.program) id with
         | StructDef (_, _, mems) -> mems
-        | _ -> failwith "type_init env"
+        | _ -> failwith "type_init is_unsafe env"
       in
       let ty =
-        try List.assoc name mems with _ -> failwith "type_design env"
+        try List.assoc name mems
+        with _ -> failwith "type_design is_unsafe env"
       in
       let l = List.init (List.length mems) (fun x -> x) in
       let l = List.map2 (fun (name, _) loc -> (name, loc)) mems l in
       loc := List.assoc name l;
-      let ty, design = type_design env ty design (ref 0) in
+      let ty, design = type_design is_unsafe env ty design (ref 0) in
       (ty, DField (name, design))
   | ty, Dnone -> (type_conv ty, Dnone)
   | _ ->
       failwith
-        ("type_design env" ^ Syntax.show_ty_ ty ^ Syntax.show_desig design)
+        ("type_design is_unsafe env" ^ Syntax.show_ty_ ty
+       ^ Syntax.show_desig design)
 
-let rec type_stmt env =
+let rec type_stmt is_unsafe env =
   let open Syntax in
   function
   | SDef l ->
@@ -659,32 +705,40 @@ let rec type_stmt env =
                   var_qual = [];
                 }
             in
-            ignore (type_init env ty init)
+            ignore (type_init is_unsafe env ty init)
         | _ -> ()
       in
       List.iter f l;
       SDef l
-  | SStmts (d, stmts) -> SStmts (d, List.map (type_stmt (d :: env)) stmts)
-  | SWhile (expr, stmt) -> SWhile (type_expr env expr, type_stmt env stmt)
-  | SDoWhile (stmt, expr) -> SDoWhile (type_stmt env stmt, type_expr env expr)
+  | SStmts (d, stmts) ->
+      SStmts (d, List.map (type_stmt is_unsafe (d :: env)) stmts)
+  | SWhile (expr, stmt) ->
+      SWhile (type_expr is_unsafe env expr, type_stmt is_unsafe env stmt)
+  | SDoWhile (stmt, expr) ->
+      SDoWhile (type_stmt is_unsafe env stmt, type_expr is_unsafe env expr)
   | SFor (stmt1, expr1, expr2, stmt2) ->
       SFor
-        ( type_stmt env stmt1,
-          Option.map (type_expr env) expr1,
-          Option.map (type_expr env) expr2,
-          type_stmt env stmt2 )
+        ( type_stmt is_unsafe env stmt1,
+          Option.map (type_expr is_unsafe env) expr1,
+          Option.map (type_expr is_unsafe env) expr2,
+          type_stmt is_unsafe env stmt2 )
   | SIfElse (expr, stmt1, stmt2) ->
-      SIfElse (type_expr env expr, type_stmt env stmt1, type_stmt env stmt2)
-  | SReturn expr -> SReturn (Option.map (type_expr env) expr)
-  | SLabel (name, stmt) -> SLabel (name, type_stmt env stmt)
+      SIfElse
+        ( type_expr is_unsafe env expr,
+          type_stmt is_unsafe env stmt1,
+          type_stmt is_unsafe env stmt2 )
+  | SReturn expr -> SReturn (Option.map (type_expr is_unsafe env) expr)
+  | SLabel (name, stmt) -> SLabel (name, type_stmt is_unsafe env stmt)
   | SGoto name -> SGoto name
   | SContinue -> SContinue
   | SBreak -> SBreak
-  | SSwitch (expr, stmt) -> SSwitch (type_expr env expr, type_stmt env stmt)
+  | SSwitch (expr, stmt) ->
+      SSwitch (type_expr is_unsafe env expr, type_stmt is_unsafe env stmt)
   | SCase (expr, stmts) ->
-      SCase (type_expr env expr, List.map (type_stmt env) stmts)
-  | SDefault stmts -> SDefault (List.map (type_stmt env) stmts)
-  | SExpr expr -> SExpr (Option.map (type_expr env) expr)
+      SCase
+        (type_expr is_unsafe env expr, List.map (type_stmt is_unsafe env) stmts)
+  | SDefault stmts -> SDefault (List.map (type_stmt is_unsafe env) stmts)
+  | SExpr expr -> SExpr (Option.map (type_expr is_unsafe env) expr)
 
 let rec type_program =
   let open Syntax in
@@ -706,11 +760,11 @@ let rec type_program =
   | EnumDecl n :: xs -> EnumDecl n :: type_program xs
   | VarDef ((n, ty), init, d, own) :: xs ->
       check_ty ty;
-      VarDef ((n, type_conv ty), type_init [] (type_conv ty) init, d, own)
+      VarDef ((n, type_conv ty), type_init false [] (type_conv ty) init, d, own)
       :: type_program xs
   | GVarDef ((n, ty), init) :: xs ->
       check_ty ty;
-      GVarDef ((n, type_conv ty), type_init [] (type_conv ty) init)
+      GVarDef ((n, type_conv ty), type_init false [] (type_conv ty) init)
       :: type_program xs
   | StructDef (n, lp, l) :: xs ->
       StructDef (n, lp, List.map (fun (n, ty) -> (n, type_conv ty)) l)
@@ -720,10 +774,11 @@ let rec type_program =
       :: type_program xs
   | EnumDef (n, l) :: xs -> EnumDef (n, l) :: type_program xs
   | FunctionDef ((n, ty), stmt) :: xs ->
-      FunctionDef ((n, type_conv ty), type_stmt [] stmt) :: type_program xs
+      FunctionDef ((n, type_conv ty), type_stmt false [] stmt)
+      :: type_program xs
   | LFunctionDef (lparams, (n, ty), stmt) :: xs ->
       LFunctionDef
         ( lparams,
           (n, type_conv ty),
-          type_stmt (Syntax.filter_depth lparams) stmt )
+          type_stmt false (Syntax.filter_depth lparams) stmt )
       :: type_program xs

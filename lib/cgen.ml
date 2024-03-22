@@ -130,6 +130,7 @@ and gen_expr = function
       match List.nth (List.rev !Env.program) id with
       | Decl ((name, _), _, _)
       | GDecl (name, _)
+      | LDecl (_, (name, _))
       | VarDef ((name, _), _, _, _)
       | GVarDef ((name, _), _)
       | FunctionDef ((name, _), _) ->

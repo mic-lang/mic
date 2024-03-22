@@ -11,7 +11,7 @@ lifetime <depth p, kind a>
 struct X;
 lifetime <depth p, kind a>
 struct X {
-    void p* x;
+    void p a* x;
     int a;
 };
 
@@ -29,7 +29,9 @@ int main () using p {
     struct Y p* a;
     int a;
     struct Y{int p* a;} p auto* b = &a;
-
+    using q{
+        malloc<q>(q, 4);
+    }
     //a;
     //&5;
     func<static,static,auto>;
@@ -56,7 +58,7 @@ return 0;
 char c = '\n';
 unsigned i = 5;
 //struct X x= {.x=0,};
-char* var[4+5] = "abc";
+char* var= "abc";
 int* const x;
 
 typedef struct X<static,static> Z;
