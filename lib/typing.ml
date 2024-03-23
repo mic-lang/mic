@@ -739,7 +739,25 @@ and type_design is_unsafe env ty design loc =
         ("type_design is_unsafe env" ^ Syntax.show_ty_ ty
        ^ Syntax.show_desig design)
 
-let rec type_stmt is_unsafe env =
+let check_droped_params params =
+  let open Syntax in
+  let rec check n name = function
+    | TPtr
+        {
+          pointee_ownership = ownership;
+          pointee_ty = ty;
+          pointee_qual = qual;
+          _;
+        } -> (
+        match !ownership with
+        | Has -> check (n + 1) name ty
+        | _ when List.mem Drop qual -> ()
+        | _ -> failwith (String.make n '*' ^ name ^ " dropped"))
+    | _ -> ()
+  in
+  List.iter (fun (name, ty) -> check 0 name ty) params
+
+let rec type_stmt is_unsafe params env =
   let open Syntax in
   function
   | SDef l ->
@@ -761,54 +779,39 @@ let rec type_stmt is_unsafe env =
       in
       List.iter f l;
       SDef l
-  | SUnsafe stmts -> SUnsafe (List.map (type_stmt true env) stmts)
+  | SUnsafe stmts -> SUnsafe (List.map (type_stmt true params env) stmts)
   | SStmts (d, stmts) ->
-      SStmts (d, List.map (type_stmt is_unsafe (d :: env)) stmts)
+      SStmts (d, List.map (type_stmt is_unsafe params (d :: env)) stmts)
   | SWhile (expr, stmt) ->
-      SWhile (type_expr is_unsafe env expr, type_stmt is_unsafe env stmt)
+      SWhile (type_expr is_unsafe env expr, type_stmt is_unsafe params env stmt)
   | SDoWhile (stmt, expr) ->
-      SDoWhile (type_stmt is_unsafe env stmt, type_expr is_unsafe env expr)
+      SDoWhile
+        (type_stmt is_unsafe params env stmt, type_expr is_unsafe env expr)
   | SFor (stmt1, expr1, expr2, stmt2) ->
       SFor
-        ( type_stmt is_unsafe env stmt1,
+        ( type_stmt is_unsafe params env stmt1,
           Option.map (type_expr is_unsafe env) expr1,
           Option.map (type_expr is_unsafe env) expr2,
-          type_stmt is_unsafe env stmt2 )
+          type_stmt is_unsafe params env stmt2 )
   | SIfElse (expr, stmt1, stmt2) ->
-      SIfElse
-        ( type_expr is_unsafe env expr,
-          type_stmt is_unsafe env stmt1,
-          type_stmt is_unsafe env stmt2 )
+      let stmt1 = type_stmt is_unsafe params env stmt1 in
+      check_droped_params params;
+      let stmt2 = type_stmt is_unsafe params env stmt2 in
+      check_droped_params params;
+      SIfElse (type_expr is_unsafe env expr, stmt1, stmt2)
   | SReturn expr -> SReturn (Option.map (type_expr is_unsafe env) expr)
-  | SLabel (name, stmt) -> SLabel (name, type_stmt is_unsafe env stmt)
+  | SLabel (name, stmt) -> SLabel (name, type_stmt is_unsafe params env stmt)
   | SGoto name -> SGoto name
   | SContinue -> SContinue
   | SBreak -> SBreak
   | SSwitch (expr, stmt) ->
-      SSwitch (type_expr is_unsafe env expr, type_stmt is_unsafe env stmt)
+      SSwitch (type_expr is_unsafe env expr, type_stmt is_unsafe params env stmt)
   | SCase (expr, stmts) ->
       SCase
-        (type_expr is_unsafe env expr, List.map (type_stmt is_unsafe env) stmts)
-  | SDefault stmts -> SDefault (List.map (type_stmt is_unsafe env) stmts)
+        ( type_expr is_unsafe env expr,
+          List.map (type_stmt is_unsafe params env) stmts )
+  | SDefault stmts -> SDefault (List.map (type_stmt is_unsafe params env) stmts)
   | SExpr expr -> SExpr (Option.map (type_expr is_unsafe env) expr)
-
-let check_droped_params decls =
-  let open Syntax in
-  let rec check n name = function
-    | TPtr
-        {
-          pointee_ownership = ownership;
-          pointee_ty = ty;
-          pointee_qual = qual;
-          _;
-        } -> (
-        match !ownership with
-        | Has -> check (n + 1) name ty
-        | _ when List.mem Drop qual -> ()
-        | _ -> failwith (String.make n '*' ^ name ^ " dropped"))
-    | _ -> ()
-  in
-  List.iter (fun (name, ty) -> check 0 name ty) decls
 
 let rec type_program =
   let open Syntax in
@@ -851,7 +854,7 @@ let rec type_program =
         FunctionDef
           ( (n, type_conv ty),
             List.map (fun (n, ty) -> (n, type_conv ty)) decls,
-            type_stmt false [] stmt )
+            type_stmt false decls [] stmt )
       in
       check_droped_params decls;
       item :: type_program xs
@@ -861,7 +864,7 @@ let rec type_program =
           ( lparams,
             (n, type_conv ty),
             List.map (fun (n, ty) -> (n, type_conv ty)) decls,
-            type_stmt false (Syntax.filter_depth lparams) stmt )
+            type_stmt false decls (Syntax.filter_depth lparams) stmt )
       in
       check_droped_params decls;
       item :: type_program xs

@@ -84,7 +84,17 @@ void (*(*g)[10])(int a, int b);
 
 lifetime <depth p, depth q, kind a, kind b>
 void h(void p a* q b* lhs, void p a* q b* rhs) {
-    *lhs = *rhs;
-    *rhs = null;
+    if (1) {
+        if (1) {
+            *lhs = *rhs;
+            *rhs = null;
+        } else {
+            *lhs = *rhs;
+            *rhs = null;
+        }
+    } else {
+        *lhs = *rhs;
+        *rhs = null;
+    }
     return;
 }

@@ -74,7 +74,25 @@ void (*signal(int, void (*)(int a)))(int);
 void (*(*g)[10])(int a, int b);
 
 void h(void **lhs, void **rhs) {
-    ((*lhs) = (*rhs));
-    ((*rhs) = NULL);
+    if (1)
+    {
+        if (1)
+        {
+            ((*lhs) = (*rhs));
+            ((*rhs) = NULL);
+        }
+                else
+        {
+            ((*lhs) = (*rhs));
+            ((*rhs) = NULL);
+        }
+
+    }
+        else
+    {
+        ((*lhs) = (*rhs));
+        ((*rhs) = NULL);
+    }
+
 return;
 }
