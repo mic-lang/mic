@@ -288,7 +288,7 @@ let rec type_expr is_unsafe env = function
                   pointee_ty = TDeclSpec [ TsChar ];
                   pointee_depth = Global;
                   pointee_kind = Static;
-                  pointee_qual = [ Const ];
+                  pointee_qual = [];
                 },
               v )
       | VNull ->
