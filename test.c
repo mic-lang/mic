@@ -1,3 +1,5 @@
+#include <stdbool.h>
+#include <stddef.h>
 
 static struct X func(struct X c, int *b) {
     b;
@@ -23,7 +25,7 @@ extern void *malloc(void*, int size);
 int main() {
     func;
     ;
-    struct X *const b = func((struct X){.x = 0});
+    struct X b = func((struct X){.x = 0});
     goto label;
     struct Y *const a;
     struct Y {
@@ -71,7 +73,7 @@ Z;
 char *const ptr[4];
 char (*const ptrq)[4];
 void (*signal(int, void (*)(int a)))(int);
-void (*(*g)[10])(int a, int b);
+void (*(*p)[10])(int a, int b);
 
 void h(void **lhs, void **rhs) {
     if (1)
@@ -81,14 +83,14 @@ void h(void **lhs, void **rhs) {
             ((*lhs) = (*rhs));
             ((*rhs) = NULL);
         }
-                else
+        else
         {
             ((*lhs) = (*rhs));
             ((*rhs) = NULL);
         }
 
     }
-        else
+    else
     {
         ((*lhs) = (*rhs));
         ((*rhs) = NULL);

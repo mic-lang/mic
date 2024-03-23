@@ -212,8 +212,7 @@ let rec gen_stmt nest = function
       ^ gen_stmt nest stmt1 ^ "\n"
       ^
       let str = gen_stmt nest stmt2 ^ "\n" in
-      if str = "\n" then ""
-      else ("else\n" |> gen_ident nest) ^ str |> gen_ident nest
+      if str = "\n" then "" else ("else\n" |> gen_ident nest) ^ str
   | SReturn None -> "return;"
   | SReturn (Some expr) -> "return " ^ gen_expr expr ^ ";" |> gen_ident nest
   | SLabel (label, stmt) -> label ^ ":\n" ^ gen_stmt nest stmt |> gen_ident nest
@@ -248,4 +247,6 @@ and gen_item_global = function
       "\n" ^ gen_decl 0 name ty ^ " " ^ gen_stmt 0 stmt ^ "\n"
   | _ -> ""
 
-let gen_program program = String.concat "" (List.map gen_item_global program)
+let gen_program program =
+  "#include <stdbool.h>\n" ^ "#include <stddef.h>\n"
+  ^ String.concat "" (List.map gen_item_global program)

@@ -15,11 +15,13 @@ let lscope : id list ref = ref []
 let curr_scope : id list ref = ref []
 let stack : id list list ref = ref []
 
+type defined_place = Lparam of id | Stack of id
+
 let map_to_program l =
-  List.rev (List.map (fun n -> (n, List.nth (List.rev !program) n)) l)
+  List.rev (List.map (fun n -> (Stack n, List.nth (List.rev !program) n)) l)
 
 let map_to_lparam l =
-  List.rev (List.map (fun n -> (n, List.nth (List.rev !lparams) n)) l)
+  List.rev (List.map (fun n -> (Lparam n, List.nth (List.rev !lparams) n)) l)
 
 let get_scope () = map_to_program !curr_scope
 let get_stack () = map_to_program (List.flatten (!curr_scope :: !stack))
@@ -113,36 +115,36 @@ let lookup_uniondef name l = find_item (is_uniondef name) l
 
 let make_structdecl name lparams =
   match lookup_structdecl name (get_stack ()) with
-  | Some id -> TsStruct (id, lparams)
-  | None -> (
+  | Some (Stack id) -> TsStruct (id, lparams)
+  | _ -> (
       match lookup_structdef name (get_stack ()) with
-      | Some id -> TsStruct (id, lparams)
-      | None -> TsStruct (push_def (StructDecl (name, lparams)), lparams))
+      | Some (Stack id) -> TsStruct (id, lparams)
+      | _ -> TsStruct (push_def (StructDecl (name, lparams)), lparams))
 
 let make_uniondecl name lparams =
   match lookup_uniondecl name (get_stack ()) with
-  | Some id -> TsUnion (id, lparams)
-  | None -> (
+  | Some (Stack id) -> TsUnion (id, lparams)
+  | _ -> (
       match lookup_structdef name (get_stack ()) with
-      | Some id -> TsUnion (id, lparams)
-      | None -> TsUnion (push_def (UnionDecl (name, lparams)), lparams))
+      | Some (Stack id) -> TsUnion (id, lparams)
+      | _ -> TsUnion (push_def (UnionDecl (name, lparams)), lparams))
 
 let make_structdef name lparams decl =
   match lookup_structdecl name (get_scope ()) with
-  | Some id ->
+  | Some (Stack id) ->
       update_program id (StructDef (name, lparams, decl));
       TsStructDef id
-  | None -> (
+  | _ -> (
       match lookup_structdef name (get_scope ()) with
       | Some _ -> failwith "redifinition of struct"
       | None -> TsStructDef (push_def (StructDef (name, lparams, decl))))
 
 let make_uniondef name lparams decl =
   match lookup_uniondecl name (get_scope ()) with
-  | Some id ->
+  | Some (Stack id) ->
       update_program id (UnionDef (name, lparams, decl));
       TsUnionDef id
-  | None -> (
+  | _ -> (
       match lookup_uniondef name (get_scope ()) with
       | Some _ -> failwith "redifinition of struct"
       | None -> TsUnionDef (push_def (UnionDef (name, lparams, decl))))
@@ -211,34 +213,38 @@ let lookup_kind name =
 
 let get_depth name =
   match lookup_depth name with
-  | Some id -> (
-      match
-        if !in_lparams then List.nth (List.rev !lparams) id
-        else List.nth (List.rev !program) id
-      with
+  | Some (Lparam id) when !in_lparams -> (
+      match List.nth (List.rev !lparams) id with
       | Block (name, depth) -> (name, depth)
       | _ -> failwith "get_depth")
-  | None -> failwith "get_depth"
+  | Some (Stack id) when not !in_lparams -> (
+      match List.nth (List.rev !program) id with
+      | Block (name, depth) -> (name, depth)
+      | _ -> failwith "get_depth")
+  | _ -> failwith "get_depth"
 
 let lookup_nontypedef_decl name =
   match lookup_decl name with
-  | Some id -> (
+  | Some (Stack id) -> (
       match List.nth (List.rev !program) id with
       | Param ((_, ty), _, _) | Decl ((_, ty), _, _) | GDecl (_, ty) ->
           let dsl = get_declspec ty in
-          if not (List.mem ScsTypedef dsl) then Some id else None
+          if not (List.mem ScsTypedef dsl) then Some (Stack id) else None
       | _ -> None)
-  | None -> None
+  | _ -> None
 
-let lookup_typedef name =
+let lookup_typedef1 name =
   match lookup_decl name with
-  | Some id -> (
+  | Some (Stack id) -> (
       match List.nth (List.rev !program) id with
       | Decl ((_, ty), _, _) | GDecl (_, ty) ->
           let dsl = get_declspec ty in
           if List.mem ScsTypedef dsl then Some id else None
       | _ -> None)
-  | None -> None
+  | _ -> None
+
+let lookup_typedef2 name =
+  match lookup_typedef1 name with Some id -> Some (Stack id) | None -> None
 
 type id_kind = IdUsual | IdLifetime | IdType | IdBlock | IdKind
 
@@ -249,7 +255,7 @@ let lookup_id_kind name =
       (lookup_kind, IdKind);
       (lookup_nontypedef_decl, IdUsual);
       (lookup_vardef, IdUsual);
-      (lookup_typedef, IdType);
+      (lookup_typedef2, IdType);
       (lookup_nonlid_functiondef, IdUsual);
       (lookup_lid, IdLifetime);
     ]
@@ -259,11 +265,20 @@ let lookup_id_kind name =
       (function Some id, kind -> Some (id, kind) | _ -> None)
       (List.map (fun (f, kind) -> (f name, kind)) lookup_func)
   in
-  match List.fast_sort (fun (x, _) (y, _) -> -compare x y) dic with
+  match
+    List.fast_sort
+      (fun (x, _) (y, _) ->
+        match (x, y) with
+        | Stack x, Stack y -> -compare x y
+        | Stack _, Lparam _ -> 1
+        | Lparam _, Stack _ -> -1
+        | Lparam x, Lparam y -> -compare x y)
+      dic
+  with
   | [] -> failwith "lookup_id_kind"
   | x :: _ -> x
 
 let lookup_var name =
   match lookup_id_kind name with
-  | id, IdUsual | id, IdLifetime -> id
+  | Stack id, IdUsual | Stack id, IdLifetime -> id
   | _ -> failwith "lookup_var"

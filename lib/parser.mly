@@ -232,7 +232,7 @@ decl_spec:
 
 decl_specs:
 | decl_specs_sub                          { TDeclSpec $1 }
-| TYPE_ID                                 { TDeclSpec [TsTypedef (Option.get (lookup_typedef $1))] }
+| TYPE_ID                                 { TDeclSpec [TsTypedef (Option.get (lookup_typedef1 $1))] }
 
 decl_specs_sub:
 | decl_spec                               { $1 }

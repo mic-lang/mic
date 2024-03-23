@@ -27,7 +27,7 @@ extern void p dyn* malloc(depth p, int size);
 
 int main () using p {
     func<p,p,static>;;
-    struct X<p, dyn> *const b = func<p,p, dyn>((struct X<p,dyn>){.x=0});
+    struct X<p, dyn> b = func<p,p, dyn>((struct X<p,dyn>){.x=0});
     goto label;
     struct Y p* const a;
     //int p* a;
@@ -79,7 +79,7 @@ Z;
 char *const ptr [4] ;
 char (*const ptrq)[4];
 void (*signal (int, void(*)(int a)))(int);
-void (*(*g)[10])(int a, int b);
+void (*(*p)[10])(int a, int b);
 
 
 lifetime <depth p, depth q, kind a, kind b>
