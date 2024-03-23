@@ -49,6 +49,11 @@ let push_def def =
   program := def :: !program;
   id
 
+let push_params name depth =
+  List.iter
+    (fun decl -> ignore (push_def (Param (decl, Depth (name, depth), ref Has))))
+    !decls
+
 let enter_scope () =
   stack := !curr_scope :: !stack;
   curr_scope := [];

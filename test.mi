@@ -29,15 +29,13 @@ int main () using p {
     func<p,p,static>;;
     struct X<p, dyn> *const b = func<p,p, dyn>((struct X<p,dyn>){.x=0});
     goto label;
-    struct Y p* a;
-    int a;
-    struct Y{int p* a;} p auto* b = &a;
+    struct Y p* const a;
+    //int p* a;
+    struct Y{int p* a;} p auto* b = a;
     using q {
         int q dyn* y = malloc<q>(q, 4);
     }
-    unsafe {
-        a;
-    }
+    a;
     
     //&5;
     func<static,static,auto>;
@@ -61,14 +59,14 @@ label :
     }
 return 0;
 }
-
+/*
 lifetime <depth p, kind a>
 void swap(void p a* lhs, void p a* rhs) {
     void p a* temp = lhs;
     lhs = rhs;
     rhs = temp;
     return;
-}
+}*/
 
 char c = '\n';
 unsigned i = 5;
@@ -86,7 +84,7 @@ void (*(*g)[10])(int a, int b);
 
 lifetime <depth p, depth q, kind a, kind b>
 void h(void p a* lhs, void p a* q b* rhs) {
-    lhs = **rhs;
+    //lhs = *rhs;
     *rhs = null;
     return;
 }

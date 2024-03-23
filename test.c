@@ -25,17 +25,14 @@ int main() {
     ;
     struct X *const b = func((struct X){.x = 0});
     goto label;
-    struct Y *a;
-    int a;
+    struct Y *const a;
     struct Y {
         int *a;
-    } *b = (&a);
+    } *b = a;
     {
         int *y = malloc(NULL, 4);
     }
-    {
-        a;
-    }
+    a;
     func;
     int c[4];
     c;
@@ -65,13 +62,6 @@ int main() {
 
     return 0;
 }
-
-void swap(void *lhs, void *rhs) {
-    void *temp = lhs;
-    (lhs = rhs);
-    (rhs = temp);
-return;
-}
 char c = '\n';
 unsigned i = 5;
 char *var = "abc";
@@ -84,7 +74,6 @@ void (*signal(int, void (*)(int a)))(int);
 void (*(*g)[10])(int a, int b);
 
 void h(void *lhs, void **rhs) {
-    (lhs = (*(*rhs)));
     ((*rhs) = NULL);
 return;
 }

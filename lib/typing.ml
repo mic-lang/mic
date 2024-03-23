@@ -126,8 +126,10 @@ let rec type_conv =
         with _ -> failwith "type_conv")
   | TBlock -> TBlock
 
-let used_var_type env = function
-  | Syntax.TVar { ownership = { contents = Moved depth } as ownership; _ } ->
+let used_var_type env ty =
+  match Syntax.get_contents_ty ty with
+  | Syntax.TPtr
+      { pointee_ownership = { contents = Moved depth } as ownership; _ } ->
       if List.mem depth env then (
         print_endline (Syntax.show_depths env);
         failwith "used var dropped before")
@@ -317,7 +319,7 @@ let rec type_expr is_unsafe env = function
                 var_qual = [];
               }
           in
-          if not is_unsafe then used_var_type env ty;
+          (*if not is_unsafe then used_var_type env ty;*)
           EVar (ty, id, [])
       | GDecl decl | GVarDef (decl, _) | FunctionDef (decl, _, _) ->
           (*print_endline (fst decl);*)
@@ -331,7 +333,7 @@ let rec type_expr is_unsafe env = function
                 var_qual = [];
               }
           in
-          if not is_unsafe then used_var_type env ty;
+          (*if not is_unsafe then used_var_type env ty;*)
           EVar (ty, id, [])
       | LFunctionDef (lparams, decl, _, _) | LDecl (lparams, decl) ->
           (*print_endline (fst decl);*)
@@ -347,7 +349,7 @@ let rec type_expr is_unsafe env = function
           in
           let subst = unify lparams largs in
           let ty = apply subst ty in
-          if not is_unsafe then used_var_type env ty;
+          (*if not is_unsafe then used_var_type env ty;*)
           EVar (ty, id, largs)
       | item ->
           failwith ("type_expr is_unsafe env: var " ^ Syntax.show_item_ item))
@@ -384,11 +386,18 @@ let rec type_expr is_unsafe env = function
             type_init is_unsafe env (type_conv (get_expr_ty lhs)) init )
       in
       (if not is_unsafe then
-         match (get_expr_ty lhs, Syntax.get_contents_ty (get_expr_ty rhs)) with
+         let ty = Syntax.get_contents_ty (get_expr_ty rhs) in
+         match (get_expr_ty lhs, ty) with
          | ( TVar { var_depth = depth; _ },
-             TPtr { pointee_ownership = ownership; _ } ) ->
-             ownership := Moved depth
-             (*print_endline ("ownership:" ^ show_ty (get_expr_ty rhs))*)
+             TPtr { pointee_ownership = ownership; pointee_qual = qual; _ } )
+           when not (List.mem Syntax.Const qual) -> (
+             if not is_unsafe then (
+               used_var_type env ty;
+               ownership := Moved depth
+               (*print_endline ("ownership:" ^ show_ty (get_expr_ty rhs))*));
+             match get_expr_ty lhs with
+             | TVar { ownership; _ } -> ownership := Has
+             | _ -> ())
          | _ -> ());
       (match
          ( Syntax.get_contents_ty (get_expr_ty lhs),
@@ -401,11 +410,19 @@ let rec type_expr is_unsafe env = function
   | Syntax.EAssign (bin, lhs, rhs) ->
       let lhs = type_expr is_unsafe env lhs in
       let rhs = type_expr is_unsafe env rhs in
+      let ty = Syntax.get_contents_ty (get_expr_ty rhs) in
       (if not is_unsafe then
-         match (get_expr_ty lhs, Syntax.get_contents_ty (get_expr_ty rhs)) with
+         match (get_expr_ty lhs, ty) with
          | ( TVar { var_depth = depth; _ },
-             TPtr { pointee_ownership = ownership; _ } ) ->
-             ownership := Moved depth
+             TPtr { pointee_ownership = ownership; pointee_qual = qual; _ } )
+           when not (List.mem Syntax.Const qual) -> (
+             if not is_unsafe then (
+               used_var_type env ty;
+               ownership := Moved depth);
+             print_endline (show_ty ty);
+             match Syntax.get_contents_ty (get_expr_ty lhs) with
+             | TPtr { pointee_ownership = ownership; _ } -> ownership := Has
+             | _ -> ())
          (*print_endline ("ownership:" ^ show_ty (get_expr_ty rhs))*)
          | _ -> ());
       (match
@@ -432,6 +449,7 @@ let rec type_expr is_unsafe env = function
             var_kind = kind;
             var_qual = qual;
           } ->
+          if not is_unsafe then used_var_type env ty;
           EUnary
             ( TPtr
                 {
@@ -446,7 +464,8 @@ let rec type_expr is_unsafe env = function
       | _ -> failwith "not lvalue")
   | Syntax.EUnary (Deref, expr) -> (
       let expr = type_expr is_unsafe env expr in
-      match Syntax.get_contents_ty (get_expr_ty expr) with
+      let expr_ty = Syntax.get_contents_ty (get_expr_ty expr) in
+      match expr_ty with
       | TPtr
           {
             pointee_ownership = ownership;
@@ -475,7 +494,11 @@ let rec type_expr is_unsafe env = function
       let args =
         List.map
           (function
-            | Syntax.AExpr expr -> Syntax.AExpr (type_expr is_unsafe env expr)
+            | Syntax.AExpr expr ->
+                let expr = type_expr is_unsafe env expr in
+                let ty = get_expr_ty expr in
+                if not is_unsafe then used_var_type env ty;
+                Syntax.AExpr expr
             | Syntax.ADepth depth -> Syntax.ADepth depth)
           args
       in
@@ -613,11 +636,13 @@ let rec type_expr is_unsafe env = function
           type_expr is_unsafe env expr,
           postfix )
   | Syntax.ECond (cond, lhs, rhs) ->
-      ECond
-        ( Syntax.get_contents_ty (get_expr_ty (type_expr is_unsafe env lhs)),
-          type_expr is_unsafe env cond,
-          type_expr is_unsafe env lhs,
-          type_expr is_unsafe env rhs )
+      let cond = type_expr is_unsafe env cond in
+      let lhs = type_expr is_unsafe env lhs in
+      let rhs = type_expr is_unsafe env rhs in
+      if not is_unsafe then used_var_type env (get_expr_ty cond);
+      if not is_unsafe then used_var_type env (get_expr_ty lhs);
+      if not is_unsafe then used_var_type env (get_expr_ty rhs);
+      ECond (Syntax.get_contents_ty (get_expr_ty lhs), cond, lhs, rhs)
   | Syntax.ECast (ty, expr) -> ECast (type_conv ty, type_expr is_unsafe env expr)
   | Syntax.ECompoundLit (ty, init) ->
       ECompoundLit (type_conv ty, type_init is_unsafe env (type_conv ty) init)
@@ -627,11 +652,15 @@ and type_init is_unsafe env ty init =
   | Syntax.IScal expr ->
       let rhs = type_expr is_unsafe env expr in
       (if not is_unsafe then
-         match (ty, Syntax.get_contents_ty (get_expr_ty rhs)) with
+         let rty = Syntax.get_contents_ty (get_expr_ty rhs) in
+         match (ty, rty) with
          | ( TVar { var_depth = depth; _ },
-             TPtr { pointee_ownership = ownership; _ } ) ->
-             ownership := Moved depth
-             (*print_endline ("ownership:" ^ show_ty (get_expr_ty rhs))*)
+             TPtr { pointee_ownership = ownership; pointee_qual = qual; _ } )
+           when not (List.mem Syntax.Const qual) -> (
+             if not is_unsafe then (
+               used_var_type env rty;
+               ownership := Moved depth);
+             match ty with TVar { ownership; _ } -> ownership := Has | _ -> ())
          | _ -> ());
       (match
          (Syntax.get_contents_ty ty, Syntax.get_contents_ty (get_expr_ty rhs))

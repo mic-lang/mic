@@ -400,7 +400,6 @@ parameter_list:
 parameter_decl:
 | DEPTH DEPTH_ID                          { [($2, TBlock)] }
 | decl_specs declarator                   { let decl = make_decl $1 $2 in push_decl_in_params decl;
-                                            ignore (push_def (Param(decl, lookup_last_depth (), ref Has)));
                                             [make_decl $1 $2] }
 | decl_specs abstract_declarator?         { match $2 with
                                             | Some d -> [make_decl $1 d]
@@ -484,10 +483,10 @@ case_or_default:
 | DEFAULT ":" list(item)                  { SDefault ($3) }
 
 using_depth:
-| USING ident                             { ignore (push_def (Block ($2, get_curr_depth ()))); ($2, get_curr_depth ()) }
+| USING ident                             { ignore (push_def (Block ($2, get_curr_depth ()))); push_params $2 (get_curr_depth ()); ($2, get_curr_depth ()) }
 
 no_depth:
-|                                         { ignore (push_def (Block ("", get_curr_depth ())));("", get_curr_depth ()) }
+|                                         { ignore (push_def (Block ("", get_curr_depth ()))); push_params "" (get_curr_depth ()); ("", get_curr_depth ()) }
 
 compound_stmt:
 | enter_scope  no_depth "{" list(item) "}" leave_scope
