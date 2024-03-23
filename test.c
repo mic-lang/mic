@@ -19,7 +19,7 @@ struct X {
     int a;
 };
 struct X *y;
-extern int printf(const char *);
+extern int printf(const char *, ...);
 extern void *malloc(void*, int size);
 
 int main() {

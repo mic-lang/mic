@@ -76,6 +76,7 @@ and gen_decl nest str = function
   | TFun (ty, l) -> gen_decl nest (str ^ "(" ^ gen_params nest l ^ ")") ty
   | TDeclSpec l -> gen_declspecs nest l ^ if str = "" then "" else " " ^ str
   | TBlock -> "void*"
+  | TVarArgs -> "..."
 
 and gen_params nest l =
   String.concat ", " (List.map (fun (name, ty) -> gen_decl nest name ty) l)

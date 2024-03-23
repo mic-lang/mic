@@ -125,6 +125,7 @@ let rec type_conv =
           TDeclSpec [ e ]
         with _ -> failwith "type_conv")
   | TBlock -> TBlock
+  | TVarArgs -> TVarArgs
 
 let used_var_type env ty =
   match Syntax.get_contents_ty ty with
@@ -240,6 +241,7 @@ let rec apply subst =
       in
       TDeclSpec (List.map f l)
   | TBlock -> TBlock
+  | TVarArgs -> TVarArgs
 
 let rec check_ty =
   let open Syntax in
@@ -267,7 +269,7 @@ let rec check_ty =
         | _ -> ()
       in
       List.iter f l
-  | TBlock -> ()
+  | _ -> ()
 
 let is_compatible_ptr lptr rptr =
   let open Syntax in

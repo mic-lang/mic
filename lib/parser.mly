@@ -391,7 +391,8 @@ pointer:
 
 parameter_type_list:
 |                                         { [] }
-| parameter_list option("," "..." {})     { $1 }
+| parameter_list                          { $1 }
+| parameter_list "," "..."                { $1 @ [("", TVarArgs)] }
 
 parameter_list:
 | parameter_decl                          { $1 }

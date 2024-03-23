@@ -127,6 +127,7 @@ and 'expr ty =
   | TArr of 'expr ty * 'expr
   | TDeclSpec of ds list
   | TBlock
+  | TVarArgs
 [@@deriving show]
 
 and 'expr decl = string * 'expr ty [@@deriving show]
@@ -190,7 +191,7 @@ let rec get_declspec = function
   | TArr (ty, _) ->
       get_declspec ty
   | TDeclSpec l -> l
-  | TBlock -> failwith "gen_declspec"
+  | _ -> failwith "gen_declspec"
 
 let get_base_ty = function
   | TPtr { pointee_ty = ty; _ } | TArr (ty, _) -> ty
