@@ -83,8 +83,8 @@ void (*(*g)[10])(int a, int b);
 
 
 lifetime <depth p, depth q, kind a, kind b>
-void h(void p a* lhs, void p a* q b* rhs) {
-    //lhs = *rhs;
+void h(void p a* q b* lhs, void p a* q b* rhs) {
+    *lhs = *rhs;
     *rhs = null;
     return;
 }

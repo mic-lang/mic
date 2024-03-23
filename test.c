@@ -73,7 +73,8 @@ char (*const ptrq)[4];
 void (*signal(int, void (*)(int a)))(int);
 void (*(*g)[10])(int a, int b);
 
-void h(void *lhs, void **rhs) {
+void h(void **lhs, void **rhs) {
+    ((*lhs) = (*rhs));
     ((*rhs) = NULL);
 return;
 }

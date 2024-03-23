@@ -299,7 +299,7 @@ let rec type_expr is_unsafe env = function
                   pointee_ty = TDeclSpec [ TsVoid ];
                   pointee_depth = Global;
                   pointee_kind = Static;
-                  pointee_qual = [ Const ];
+                  pointee_qual = [];
                 },
               v )
       | _ -> EConst (Syntax.TDeclSpec [ TsInt ], v))
@@ -419,7 +419,8 @@ let rec type_expr is_unsafe env = function
              if not is_unsafe then (
                used_var_type env ty;
                ownership := Moved depth);
-             print_endline (show_ty ty);
+
+             print_endline (show_ty (get_expr_ty lhs));
              match Syntax.get_contents_ty (get_expr_ty lhs) with
              | TPtr { pointee_ownership = ownership; _ } -> ownership := Has
              | _ -> ())
