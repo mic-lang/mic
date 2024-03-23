@@ -41,6 +41,7 @@ int main() {
     label:
     for (int i = 0; (i < 5); i++)
     {
+        (*printf)("%d");
         if (((++i) == 4))
         break;
 

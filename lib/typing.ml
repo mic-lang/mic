@@ -516,11 +516,8 @@ let rec type_expr is_unsafe env = function
       in
       let rec type_args params args =
         match (params, args) with
-        | (_, Syntax.TVarArgs) :: [], Syntax.AExpr expr :: [] ->
-            let expr = type_expr is_unsafe env expr in
-            let ty = get_expr_ty expr in
-            if not is_unsafe then used_var_type env ty;
-            Syntax.AExpr expr :: []
+        | (_, Syntax.TVarArgs) :: [], [] ->
+            []
         | (_, Syntax.TVarArgs) :: [], Syntax.AExpr expr :: args ->
             let expr = type_expr is_unsafe env expr in
             let ty = get_expr_ty expr in
