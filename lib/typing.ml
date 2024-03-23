@@ -124,7 +124,7 @@ let rec type_conv =
           in
           TDeclSpec [ e ]
         with _ -> failwith "type_conv")
-  | TBlock -> TBlock
+  | TBlock depth -> TBlock depth
   | TVarArgs -> TVarArgs
 
 let used_var_type env ty =
@@ -159,7 +159,7 @@ let apply_depth subst =
   | Syntax.Depth (name, _) when List.mem_assoc name subst -> (
       match List.assoc name subst with
       | LBlock blk -> blk
-      | _ -> failwith "apply_kind")
+      | _ -> failwith "apply_depth")
   | depth -> depth
 
 let apply_kind subst =
@@ -197,7 +197,17 @@ let rec apply subst =
           var_qual = qual;
         }
   | TFun (ty, params) ->
-      TFun (apply subst ty, List.map (fun (n, ty) -> (n, apply subst ty)) params)
+      TFun
+        ( apply subst ty,
+          List.map
+            (function
+              | n, TBlock _ when List.mem_assoc n subst -> (
+                  match List.assoc n subst with
+                  | LBlock (Depth (name, _) as depth) -> (name, TBlock depth)
+                  | LBlock Global -> ("", TBlock Global)
+                  | _ -> failwith "apply")
+              | n, ty -> (n, apply subst ty))
+            params )
   | TPtr
       {
         pointee_ownership = ownership;
@@ -240,7 +250,7 @@ let rec apply subst =
         | ds -> ds
       in
       TDeclSpec (List.map f l)
-  | TBlock -> TBlock
+  | TBlock depth -> TBlock depth
   | TVarArgs -> TVarArgs
 
 let rec check_ty =
@@ -492,27 +502,43 @@ let rec type_expr is_unsafe env = function
   | Syntax.EUnary (Sizeof, expr) ->
       EUnary (TDeclSpec [ TsInt ], Sizeof, type_expr is_unsafe env expr)
   | Syntax.ESizeof ty -> ESizeof (TDeclSpec [ TsInt ], type_conv ty)
-  | Syntax.EPostfix (expr, PCall args) -> (
+  | Syntax.EPostfix (expr, PCall args) ->
       let expr = type_expr is_unsafe env expr in
-      let args =
-        List.map
-          (function
-            | Syntax.AExpr expr ->
-                let expr = type_expr is_unsafe env expr in
-                let ty = get_expr_ty expr in
-                if not is_unsafe then used_var_type env ty;
-                Syntax.AExpr expr
-            | Syntax.ADepth depth -> Syntax.ADepth depth)
-          args
+      let ret, params =
+        match
+          Syntax.get_base_ty
+            (Syntax.get_contents_ty (type_conv (get_expr_ty expr)))
+        with
+        | TFun (ret, params) -> (ret, params)
+        | _ ->
+            print_endline (show_ty (type_conv (get_expr_ty expr)));
+            failwith "type_expr is_unsafe env"
       in
-      match
-        Syntax.get_base_ty
-          (Syntax.get_contents_ty (type_conv (get_expr_ty expr)))
-      with
-      | TFun (ret, _) -> EPostfix (ret, expr, PCall args)
-      | _ ->
-          print_endline (show_ty (type_conv (get_expr_ty expr)));
-          failwith "type_expr is_unsafe env")
+      let rec type_args params args =
+        match (params, args) with
+        | (_, Syntax.TVarArgs) :: [], Syntax.AExpr expr :: [] ->
+            let expr = type_expr is_unsafe env expr in
+            let ty = get_expr_ty expr in
+            if not is_unsafe then used_var_type env ty;
+            Syntax.AExpr expr :: []
+        | (_, Syntax.TVarArgs) :: [], Syntax.AExpr expr :: args ->
+            let expr = type_expr is_unsafe env expr in
+            let ty = get_expr_ty expr in
+            if not is_unsafe then used_var_type env ty;
+            Syntax.AExpr expr :: type_args params args
+        | _ :: params, Syntax.AExpr expr :: args ->
+            let expr = type_expr is_unsafe env expr in
+            let ty = get_expr_ty expr in
+            if not is_unsafe then used_var_type env ty;
+            Syntax.AExpr expr :: type_args params args
+        | (_, TBlock dep) :: params, Syntax.ADepth depth :: args
+          when dep = depth ->
+            Syntax.ADepth depth :: type_args params args
+        | [], [] -> []
+        | _ -> failwith "type_args"
+      in
+      let args = type_args params args in
+      EPostfix (ret, expr, PCall args)
   | Syntax.EPostfix (expr, PIdx idx) -> (
       let expr = type_expr is_unsafe env expr in
       match get_expr_ty expr with

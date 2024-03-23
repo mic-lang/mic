@@ -126,7 +126,7 @@ and 'expr ty =
   | TPtr of 'expr pointer
   | TArr of 'expr ty * 'expr
   | TDeclSpec of ds list
-  | TBlock
+  | TBlock of depth
   | TVarArgs
 [@@deriving show]
 

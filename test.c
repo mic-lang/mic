@@ -25,7 +25,7 @@ extern void *malloc(void*, int size);
 int main() {
     func;
     ;
-    struct X b = func((struct X){.x = 0});
+    struct X b = func((struct X){.x = 0}, NULL);
     goto label;
     struct Y *const a;
     struct Y {
@@ -41,7 +41,6 @@ int main() {
     label:
     for (int i = 0; (i < 5); i++)
     {
-        (*printf)("%d");
         if (((++i) == 4))
         break;
 
@@ -96,5 +95,6 @@ void h(void **lhs, void **rhs) {
         ((*rhs) = NULL);
     }
 
+    malloc(NULL, 4);
 return;
 }

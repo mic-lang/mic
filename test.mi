@@ -27,7 +27,7 @@ extern void p dyn* malloc(depth p, int size);
 
 int main () using p {
     func<p,p,static>;;
-    struct X<p, dyn> b = func<p,p, dyn>((struct X<p,dyn>){.x=0});
+    struct X<p, dyn> b = func<p,p, dyn>((struct X<p,dyn>){.x=0}, null);
     goto label;
     struct Y p* const a;
     //int p* a;
@@ -45,7 +45,7 @@ int main () using p {
 
 label : 
     for (int i=0;i<5;i++) using q {
-        (*printf)("%d");
+        //(*printf)("%d");
         if (++i==4)
         break;
         if (i<5)continue;
@@ -83,7 +83,7 @@ void (*(*p)[10])(int a, int b);
 
 
 lifetime <depth p, depth q, kind a, kind b>
-void h(void p a* q b* lhs, void p a* q b* rhs) {
+void h(void p a* q b* lhs, void p a* q b* rhs) using p {
     if (1) {
         if (1) {
             *lhs = *rhs;
@@ -96,5 +96,6 @@ void h(void p a* q b* lhs, void p a* q b* rhs) {
         *lhs = *rhs;
         *rhs = null;
     }
+    malloc<static>(static, 4);
     return;
 }

@@ -399,7 +399,8 @@ parameter_list:
 | parameter_list "," parameter_decl       { $1 @ $3 }
 
 parameter_decl:
-| DEPTH DEPTH_ID                          { [($2, TBlock)] }
+| DEPTH DEPTH_ID                          { [($2, TBlock (Depth (fst (get_depth $2), snd (get_depth $2))))] }
+| DEPTH STATIC                            { [("", TBlock Global)] }
 | decl_specs declarator                   { let decl = make_decl $1 $2 in push_decl_in_params decl;
                                             [make_decl $1 $2] }
 | decl_specs abstract_declarator?         { match $2 with
