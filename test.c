@@ -64,6 +64,13 @@ int main() {
 
     return 0;
 }
+
+void swap(void *lhs, void *rhs) {
+    void *temp = lhs;
+    (lhs = rhs);
+    (rhs = temp);
+return;
+}
 char c = '\n';
 unsigned i = 5;
 char *var = "abc";
@@ -98,4 +105,13 @@ void h(void **lhs, void **rhs) {
 
     malloc(NULL, 4);
 return;
+}
+
+void i(void *ptr) {
+return;
+}
+
+void j() {
+    void *ptr1;    void *ptr2;
+    (ptr2 = ptr1);
 }

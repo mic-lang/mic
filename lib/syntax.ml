@@ -183,6 +183,7 @@ and 'expr var = {
 
 and qualifier = Const | Volatile | Drop [@@deriving show]
 and ownership = Has | Moved of depth | Dropped [@@deriving show]
+and pointer_ = expr pointer [@@deriving show]
 
 let rec get_declspec = function
   | TVar { var_ty = ty; _ }

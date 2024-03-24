@@ -59,14 +59,14 @@ label :
     }
 return 0;
 }
-/*
+
 lifetime <depth p, kind a>
 void swap(void p a* lhs, void p a* rhs) {
     void p a* temp = lhs;
     lhs = rhs;
     rhs = temp;
     return;
-}*/
+}
 
 char c = '\n';
 unsigned i = 5;
@@ -98,4 +98,15 @@ void h(void p a* q b* lhs, void p a* q b* rhs) using p {
     }
     malloc<static>(static, 4);
     return;
+}
+
+lifetime <depth p, kind a>
+void i(void p a* drop ptr) using p {
+    return;
+}
+
+void j() using p{
+    void p* ptr1, p* ptr2;
+    i<p, auto>(ptr1);
+    ptr2 = ptr1;
 }

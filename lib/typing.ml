@@ -14,6 +14,7 @@ type expr =
 and ty = expr Syntax.ty [@@deriving show]
 and typed_program = expr Syntax.item list [@@deriving show]
 and typed_programi = (Syntax.id * expr Syntax.item) list [@@deriving show]
+and pointer = expr Syntax.pointer [@@deriving show]
 
 let program : typed_program ref = ref []
 
@@ -416,6 +417,8 @@ let rec type_expr is_unsafe env = function
            Syntax.get_contents_ty (get_expr_ty rhs) )
        with
       | TPtr lhs, TPtr rhs when not (is_compatible_ptr lhs rhs) ->
+          print_endline ("lhs:" ^ show_pointer lhs);
+          print_endline ("rhs:" ^ show_pointer rhs);
           failwith "pointer type mismatch"
       | _ -> ());
       EAssign (get_expr_ty lhs, bin, lhs, rhs)
@@ -514,19 +517,30 @@ let rec type_expr is_unsafe env = function
             print_endline (show_ty (type_conv (get_expr_ty expr)));
             failwith "type_expr is_unsafe env"
       in
+      let rec drop_passing param_ty arg_ty =
+        match (param_ty, Syntax.get_contents_ty arg_ty) with
+        | ( Syntax.TPtr
+              { pointee_ty = _; pointee_qual = qual; pointee_depth = depth; _ },
+            Syntax.TPtr { pointee_ty = _; pointee_ownership = ownership; _ } )
+          when List.mem Syntax.Drop qual ->
+            ownership := Moved depth
+        | ( Syntax.TPtr { pointee_ty = param_ty; _ },
+            Syntax.TPtr { pointee_ty = arg_ty; _ } ) ->
+            drop_passing param_ty arg_ty
+        | _ -> ()
+      in
       let rec type_args params args =
         match (params, args) with
-        | (_, Syntax.TVarArgs) :: [], [] ->
-            []
+        | (_, Syntax.TVarArgs) :: [], [] -> []
         | (_, Syntax.TVarArgs) :: [], Syntax.AExpr expr :: args ->
             let expr = type_expr is_unsafe env expr in
             let ty = get_expr_ty expr in
             if not is_unsafe then used_var_type env ty;
             Syntax.AExpr expr :: type_args params args
-        | _ :: params, Syntax.AExpr expr :: args ->
+        | (_, param_ty) :: params, Syntax.AExpr expr :: args ->
             let expr = type_expr is_unsafe env expr in
-            let ty = get_expr_ty expr in
-            if not is_unsafe then used_var_type env ty;
+            let arg_ty = get_expr_ty expr in
+            if not is_unsafe then drop_passing param_ty arg_ty;
             Syntax.AExpr expr :: type_args params args
         | (_, TBlock dep) :: params, Syntax.ADepth depth :: args
           when dep = depth ->
@@ -692,7 +706,8 @@ and type_init is_unsafe env ty init =
          (Syntax.get_contents_ty ty, Syntax.get_contents_ty (get_expr_ty rhs))
        with
       | TPtr lhs, TPtr rhs when not (is_compatible_ptr lhs rhs) ->
-          print_endline (Syntax.show_ty_ ty);
+          print_endline ("lhs:" ^ Syntax.show_pointer_ lhs);
+          print_endline ("rhs:" ^ show_pointer rhs);
           failwith "pointer type mismatch"
       | _ -> ());
       Syntax.IScal rhs
