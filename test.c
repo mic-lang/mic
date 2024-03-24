@@ -26,7 +26,7 @@ struct X {
 };
 struct X *y;
 extern int printf(const char *, ...);
-extern void *malloc(p, int size);
+extern void *malloc(mi_heap_t*, int size);
 extern void free(void *ptr);
 
 int main() {
