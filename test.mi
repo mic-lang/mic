@@ -76,7 +76,7 @@ int* const x;
 
 typedef struct X<static,static> Z;
 Z;
-char *const ptr [4] ;
+
 char (*const ptrq)[4];
 void (*signal (int, void(*)(int a)))(int);
 void (*(*p)[10])(int a, int b);
@@ -99,14 +99,13 @@ void h(void p a* q b* lhs, void p a* q b* rhs) using p {
     malloc<static>(static, 4);
     return;
 }
-
 lifetime <depth p, kind a>
 void i(void p a* drop ptr1) using p {
     return ptr1;
 }
-
+char *const ptr [4] ;
 void j() using p{
-    void p* ptr1, p* ptr2;
-    i<p, auto>(ptr1);
-    //ptr2 = ptr1;
+    void p* ptr, p* ptr_;
+    i<p, auto>(ptr);
+    //ptr_ = ptr;
 }

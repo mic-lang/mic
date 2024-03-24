@@ -77,7 +77,6 @@ char *var = "abc";
 int *const x;
 typedef struct X Z;
 Z;
-char *const ptr[4];
 char (*const ptrq)[4];
 void (*signal(int, void (*)(int a)))(int);
 void (*(*p)[10])(int a, int b);
@@ -110,8 +109,9 @@ return;
 void i(void *ptr1) {
     return ptr1;
 }
+char *const ptr[4];
 
 void j() {
-    void *ptr1;    void *ptr2;
-    i(ptr1);
+    void *ptr;    void *ptr_;
+    i(ptr);
 }

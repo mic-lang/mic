@@ -103,11 +103,15 @@ let is_uniondef name = function
   | UnionDef (n, _, _) when n = name -> true
   | _ -> false
 
-let rec find_item p = function
-  | (id, item) :: _ when p item -> Some id
-  | _ :: xs -> find_item p xs
-  | [] -> None
+let rec find_item p acc = function
+  | (id, item) :: xs when p item -> find_item p (id :: acc) xs
+  | _ :: xs -> find_item p acc xs
+  | [] -> (
+      match List.fast_sort (fun x y -> -compare x y) acc with
+      | x :: _ -> Some x
+      | [] -> None)
 
+let find_item p def = find_item p [] def
 let lookup_structdecl name l = find_item (is_structdecl name) l
 let lookup_uniondecl name l = find_item (is_uniondecl name) l
 let lookup_structdef name l = find_item (is_structdef name) l
