@@ -107,11 +107,11 @@ void h(void **lhs, void **rhs) {
 return;
 }
 
-void i(void *ptr) {
-return;
+void i(void *ptr1) {
+    return ptr1;
 }
 
 void j() {
     void *ptr1;    void *ptr2;
-    (ptr2 = ptr1);
+    i(ptr1);
 }

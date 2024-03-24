@@ -101,12 +101,12 @@ void h(void p a* q b* lhs, void p a* q b* rhs) using p {
 }
 
 lifetime <depth p, kind a>
-void i(void p a* drop ptr) using p {
-    return;
+void i(void p a* drop ptr1) using p {
+    return ptr1;
 }
 
 void j() using p{
     void p* ptr1, p* ptr2;
     i<p, auto>(ptr1);
-    ptr2 = ptr1;
+    //ptr2 = ptr1;
 }

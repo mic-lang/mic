@@ -839,7 +839,20 @@ let rec type_stmt is_unsafe params env =
       let stmt2 = type_stmt is_unsafe params env stmt2 in
       check_droped_params params;
       SIfElse (type_expr is_unsafe env expr, stmt1, stmt2)
-  | SReturn expr -> SReturn (Option.map (type_expr is_unsafe env) expr)
+  | SReturn expr ->
+      let drop_returning ty =
+        match ty with
+        | Syntax.TPtr { pointee_ownership = ownership; _ } ->
+            ownership := Moved Global
+        | _ -> ()
+      in
+      SReturn
+        (Option.map
+           (fun expr ->
+             let expr = type_expr is_unsafe env expr in
+             drop_returning (Syntax.get_contents_ty (get_expr_ty expr));
+             expr)
+           expr)
   | SLabel (name, stmt) -> SLabel (name, type_stmt is_unsafe params env stmt)
   | SGoto name -> SGoto name
   | SContinue -> SContinue
