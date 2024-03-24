@@ -75,8 +75,7 @@ and gen_decl nest str = function
   | TArr (ty, expr) -> gen_decl nest (str ^ "[" ^ gen_expr expr ^ "]") ty
   | TFun (ty, l) -> gen_decl nest (str ^ "(" ^ gen_params nest l ^ ")") ty
   | TDeclSpec l -> gen_declspecs nest l ^ if str = "" then "" else " " ^ str
-  | TBlock (Depth (name, _)) -> name
-  | TBlock _ -> "NULL"
+  | TBlock _ -> "mi_heap_t*"
   | TVarArgs -> "..."
 
 and gen_params nest l =
