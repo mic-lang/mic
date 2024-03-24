@@ -23,6 +23,9 @@ extern int printf(const char *, ...);
 lifetime <depth p>
 extern void p dyn* malloc(depth p, int size);  
 
+lifetime <depth p>
+extern void free(void p dyn* drop ptr);  
+
 
 
 int main () using p {
@@ -34,6 +37,8 @@ int main () using p {
     struct Y{int p* a;} p auto* b = a;
     using q {
         int q dyn* y = malloc<q>(q, 4);
+        free<q>(y);
+        y = null;
     }
     a;
     
@@ -108,4 +113,5 @@ void j() using p{
     void p* ptr, p* ptr_;
     i<p, auto>(ptr);
     //ptr_ = ptr;
+    malloc<p>(p,4);
 }

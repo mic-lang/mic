@@ -75,7 +75,8 @@ and gen_decl nest str = function
   | TArr (ty, expr) -> gen_decl nest (str ^ "[" ^ gen_expr expr ^ "]") ty
   | TFun (ty, l) -> gen_decl nest (str ^ "(" ^ gen_params nest l ^ ")") ty
   | TDeclSpec l -> gen_declspecs nest l ^ if str = "" then "" else " " ^ str
-  | TBlock _ -> "void*"
+  | TBlock (Depth (name, _)) -> name
+  | TBlock _ -> "NULL"
   | TVarArgs -> "..."
 
 and gen_params nest l =
@@ -163,7 +164,10 @@ and gen_postfix = function
   | PInc -> "++"
   | PDec -> "--"
 
-and gen_arg = function AExpr expr -> gen_expr expr | ADepth _ -> "NULL"
+and gen_arg = function
+  | AExpr expr -> gen_expr expr
+  | ADepth (Depth (name, _)) -> name
+  | ADepth _ -> "NULL"
 
 and gen_init = function
   | IScal expr -> gen_expr expr
@@ -189,7 +193,24 @@ let rec gen_stmt nest = function
            (fun id -> gen_item nest (List.nth (List.rev !Env.program) id))
            l)
   | SUnsafe [] | SStmts (_, []) -> ""
-  | SUnsafe l | SStmts (_, l) ->
+  | SUnsafe l ->
+      ("{\n" |> gen_ident nest)
+      ^ String.concat ""
+          (List.map (fun stmt -> gen_stmt (nest + 1) stmt ^ "\n") l)
+      ^ ("}" |> gen_ident nest)
+  | SStmts (Depth ("", _), l) ->
+      ("{\n" |> gen_ident nest)
+      ^ String.concat ""
+          (List.map (fun stmt -> gen_stmt (nest + 1) stmt ^ "\n") l)
+      ^ ("}" |> gen_ident nest)
+  | SStmts (Depth (name, _), l) ->
+      ("{\n" |> gen_ident nest)
+      ^ ("mi_heap_t* " ^ name ^ " = mi_heap_new();\n" |> gen_ident (nest + 1))
+      ^ String.concat ""
+          (List.map (fun stmt -> gen_stmt (nest + 1) stmt ^ "\n") l)
+      ^ ("mi_heap_destroy(" ^ name ^ ");\n" |> gen_ident (nest + 1))
+      ^ ("}" |> gen_ident nest)
+  | SStmts (_, l) ->
       ("{\n" |> gen_ident nest)
       ^ String.concat ""
           (List.map (fun stmt -> gen_stmt (nest + 1) stmt ^ "\n") l)
@@ -248,6 +269,8 @@ and gen_item_global = function
       "\n" ^ gen_decl 0 name ty ^ " " ^ gen_stmt 0 stmt ^ "\n"
   | _ -> ""
 
+let prelude =
+  "#include <mimalloc.h>\n\n#include <stdbool.h>\n\n#include <stddef.h>\n\n"
+
 let gen_program program =
-  "#include <stdbool.h>\n" ^ "#include <stddef.h>\n"
-  ^ String.concat "" (List.map gen_item_global program)
+  prelude ^ String.concat "" (List.map gen_item_global program)
