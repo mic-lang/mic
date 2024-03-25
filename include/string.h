@@ -1,7 +1,7 @@
 #ifndef _MIC_STRING_H
 #define _MIC_STRING_H
 
-#include <stddef.h>
+#include "stddef.h"
 
 size_t strlen(const char *);
 int strcmp(const char *, const char *);

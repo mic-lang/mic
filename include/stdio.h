@@ -6,10 +6,7 @@
 
 #define EOF (-1)
 
-typedef struct {
-  int (*read)(void);
-  int (*write)(int);
-} FILE;
+typedef void FILE;
 
 extern FILE *stdin;
 extern FILE *stdout;
