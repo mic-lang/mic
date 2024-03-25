@@ -90,7 +90,7 @@ and 'expr postfix =
   | PDec
 [@@deriving show]
 
-and 'expr arg = AExpr of 'expr | ADepth of depth
+and 'expr arg = AExpr of 'expr | ADepth of depth [@@deriving show]
 
 and 'expr init = IScal of 'expr | IVect of ('expr design * 'expr init) list
 [@@deriving show]
@@ -184,6 +184,7 @@ and 'expr var = {
 and qualifier = Const | Volatile | Drop [@@deriving show]
 and ownership = Has | Moved of depth | Dropped [@@deriving show]
 and pointer_ = expr pointer [@@deriving show]
+and arg_ = expr arg [@@deriving show]
 
 let rec get_declspec = function
   | TVar { var_ty = ty; _ }

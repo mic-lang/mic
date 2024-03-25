@@ -93,7 +93,7 @@ unsigned i = 5;
 char *var = "abc";
 int *const x;
 typedef struct X Z;
-Z extern;
+Z;
 char (*const ptrq)[4];
 void (*signal(int, void (*)(int a)))(int);
 void (*(*p)[10])(int a, int b);

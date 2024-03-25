@@ -58,6 +58,7 @@ rule token = parse
 | "auto"      { AUTO }
 | "static"    { STATIC }
 | "extern"    { EXTERN }
+| "inline"    { INLINE }
 | "const"     { CONST }
 | "volatile"  { VOLATILE }
 | "if"        { IF }
@@ -136,12 +137,13 @@ rule token = parse
 | (fnum as f) [ 'f' 'F' ]?      { FLOAT (f) }
 | (fnum as f) [ 'l' 'L' ]       { FLOAT( f) }
 | '"'                           { STR (string "" lexbuf) }
-| ident  as n                   { try match snd (lookup_id_kind n) with
-                                  | IdUsual -> ID n
-                                  | IdLifetime ->LID n
-                                  | IdType -> TYPE_ID n
-                                  | IdBlock -> DEPTH_ID n
-                                  | IdKind -> KIND_ID n with _ -> ID n
+| ident  as n                   { 
+                                    try match snd (lookup_id_kind n) with
+                                    | IdUsual -> ID n
+                                    | IdLifetime -> LID n
+                                    | IdType -> TYPE_ID n
+                                    | IdBlock -> DEPTH_ID n
+                                    | IdKind -> KIND_ID n with _ -> ID n
                                 }
 | eof   { EOF }
 | _     { raise (LexerError ("illegal token '%s'" ^ Lexing.lexeme lexbuf)) }

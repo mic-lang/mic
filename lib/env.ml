@@ -69,11 +69,13 @@ let leave_scope () =
 let enter_scope_first () =
   program := !lparams @ !program;
   stack := !curr_scope :: !stack;
-  curr_scope := !lscope
+  curr_scope := !lscope;
+  incr curr_depth
 
 let leave_scope_last () =
   curr_scope := List.hd !stack;
   stack := List.tl !stack;
+  decr curr_depth;
   curr_depth := 0;
   in_lparams := false;
   lscope := [];
@@ -279,7 +281,9 @@ let lookup_id_kind name =
         | Lparam x, Lparam y -> -compare x y)
       dic
   with
-  | [] -> failwith "lookup_id_kind"
+  | [] ->
+      print_endline name;
+      failwith "lookup_id_kind"
   | x :: _ -> x
 
 let lookup_var name =

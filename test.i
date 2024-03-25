@@ -1,3 +1,9 @@
+# 0 "test.c"
+# 0 "<built-in>"
+# 0 "<command-line>"
+# 1 "/usr/include/stdc-predef.h" 1 3 4
+# 0 "<command-line>" 2
+# 1 "test.c"
 lifetime <depth p, depth q, kind a>
 static struct X<p, a> func(struct X<p,a> c, int p* b) using r {
     b;
@@ -21,10 +27,10 @@ struct X<static, dyn>* y;
 extern int printf(const char *, ...);
 
 lifetime <depth p>
-extern void p dyn* malloc(depth p, int size);  
+extern void p dyn* malloc(depth p, int size);
 
 lifetime <depth p>
-extern void free(void p dyn* drop ptr);  
+extern void free(void p dyn* drop ptr);
 
 
 
@@ -33,7 +39,7 @@ int main () using p {
     struct X<p, dyn> b = func<p,p, dyn>((struct X<p,dyn>){.x=0}, null);
     goto label;
     struct Y p* const a;
-    //int p* a;
+
     struct Y{int p* a;} p auto* b = a;
     using q {
         int q dyn* y = malloc<q>(q, 4);
@@ -41,14 +47,14 @@ int main () using p {
         y = null;
     }
     a;
-    
-    //&5;
+
+
     func<static,static,auto>;
     int c[4];
-    //a = c[3];
+
     c;
 
-label : 
+label :
     for (int i=0;i<5;i++) using q {
         (*printf)("%d");
         if (++i==4)
@@ -75,7 +81,7 @@ void swap(void p a* lhs, void p a* rhs) {
 
 char c = '\n';
 unsigned i = 5;
-//struct X x= {.x=0,};
+
 char* var= "abc";
 int* const x;
 
@@ -112,6 +118,6 @@ char *const ptr [4] ;
 void j() using p{
     void p* ptr, p* ptr_;
     i<p, auto>(ptr);
-    //ptr_ = ptr;
+
     malloc<p>(p,4);
 }

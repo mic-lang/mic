@@ -3,8 +3,8 @@
 #include "include/stdlib.h"
 #include "include/stdbool.h"
 
-//lifetime <depth p>
-void test_heap(void dyn* p_out) using q {
+lifetime <depth p>
+void test_heap(void p dyn* p_out) using q {
   void q dyn* p1 = mi_malloc<q>(q,32);
   void q dyn* p2 = mi_malloc<q>(q,48);
   mi_free<p>(p_out);

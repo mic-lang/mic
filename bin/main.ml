@@ -1,7 +1,9 @@
 let out_file fname =
   let fnlen = String.length fname in
-  let suffix = if 3 < fnlen then String.sub fname (fnlen - 3) 3 else "" in
-  if suffix = ".mi" then Printf.sprintf "%s.c" (String.sub fname 0 (fnlen - 3))
+  let suffix = if 3 < fnlen then String.sub fname (fnlen - 2) 2 else "" in
+  if suffix = ".c" then Printf.sprintf "%s.i" (String.sub fname 0 (fnlen - 2))
+  else if suffix = "mi" then
+    Printf.sprintf "%s.c" (String.sub fname 0 (fnlen - 3))
   else Printf.sprintf "%s.c" fname
 
 let show_pos fname filebuf =
@@ -24,7 +26,11 @@ let () =
     exit (-1))
   else
     let fname = Sys.argv.(1) in
-    let inchan = open_in fname in
+    ignore (Sys.command ("cp " ^ fname ^ " " ^ out_file fname));
+    let fname = out_file fname in
+    print_endline fname;
+    ignore (Sys.command ("gcc -E " ^ fname ^ " > " ^ out_file fname));
+    let inchan = open_in (out_file fname) in
     let filebuf = Lexing.from_channel inchan in
     try
       ignore (Mic.Parser.translation_unit Mic.Lexer.token filebuf);
@@ -37,10 +43,10 @@ let () =
               (fun i x -> (i, x))
               (Mic.Typing.type_program (List.rev !Mic.Env.program))));
       let program = Mic.Cgen.gen_program (List.rev !Mic.Env.program) in
-      let outchan = open_out (out_file fname) in
+      let outchan = open_out fname in
       Printf.fprintf outchan "%s" program
     with
     | Failure msg -> show_error "%s" msg
     | _ ->
-        show_pos fname filebuf;
+        show_pos (out_file fname) filebuf;
         show_error "parser: syntax error near '%s'" (Lexing.lexeme filebuf)

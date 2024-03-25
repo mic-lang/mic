@@ -27,30 +27,30 @@ void mi_collect(bool force);
 void mi_stats_print(void* out);
 
 lifetime <depth p>
-inline static void p dyn* mi_malloc(mi_heap_t p dyn* heap, size_t size) {
+inline static void p dyn* mi_malloc(depth p, size_t size) {
     unsafe {
-        return mi_heap_malloc(heap, size);
+        //return mi_heap_malloc(p, size);
     }
 }
 
 lifetime <depth p>
-inline static void p dyn* mi_zalloc(mi_heap_t p dyn* heap, size_t size) {
+inline static void p dyn* mi_zalloc(depth p, size_t size) {
     unsafe {
-        return mi_heap_zalloc(heap, size);
+        return mi_heap_zalloc(p, size);
     }
 }
 
 lifetime <depth p>
-inline static void p dyn* mi_calloc(mi_heap_t p dyn* heap, size_t count, size_t size) {
+inline static void p dyn* mi_calloc(depth p, size_t count, size_t size) {
     unsafe {
-        return mi_heap_calloc(heap, count, size);
+        return mi_heap_calloc(p, count, size);
     }
 }
 
 lifetime <depth p>
-inline static void p dyn* mi_realloc(mi_heap_t p dyn* heap, void p dyn* ptr, size_t new_size) {
+inline static void p dyn* mi_realloc(depth p, void p dyn* ptr, size_t new_size) {
     unsafe {
-        return mi_heap_realloc(heap, ptr, new_size);
+        return mi_heap_realloc(p, ptr, new_size);
     }
 }
 

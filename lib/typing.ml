@@ -102,7 +102,7 @@ let rec type_conv =
           pointee_kind = kind;
           pointee_qual = qual;
         }
-  | TDeclSpec l -> (
+  | TDeclSpec l as ty -> (
       if
         List.exists
           (function
@@ -124,7 +124,9 @@ let rec type_conv =
               l
           in
           TDeclSpec [ e ]
-        with _ -> failwith "type_conv")
+        with _ ->
+          print_endline (Syntax.show_ty_ ty);
+          failwith "type_conv aa")
   | TBlock depth -> TBlock depth
   | TVarArgs -> TVarArgs
 
@@ -134,8 +136,22 @@ let used_var_type env ty =
       { pointee_ownership = { contents = Moved depth } as ownership; _ } ->
       if List.mem depth env then (
         print_endline (Syntax.show_depths env);
+        print_endline (show_ty ty);
         failwith "used var dropped before")
       else ownership := Has
+  | _ -> ()
+
+let rec clean_gdecl_ty =
+  let open Syntax in
+  function
+  | TVar { var_ty = ty; _ } -> clean_gdecl_ty ty
+  | TFun (ty, decl) ->
+      clean_gdecl_ty ty;
+      List.iter (fun (_, ty) -> clean_gdecl_ty ty) decl
+  | TPtr { pointee_ty = ty; pointee_ownership = ownership; _ } ->
+      ownership := Has;
+      clean_gdecl_ty ty
+  | TArr (ty, _) -> clean_gdecl_ty ty
   | _ -> ()
 
 let rec unify lparams largs =
@@ -347,6 +363,7 @@ let rec type_expr is_unsafe env = function
               }
           in
           (*if not is_unsafe then used_var_type env ty;*)
+          clean_gdecl_ty (snd decl);
           EVar (ty, id, [])
       | LFunctionDef (lparams, decl, _, _) | LDecl (lparams, decl) ->
           (*print_endline (fst decl);*)
@@ -363,6 +380,7 @@ let rec type_expr is_unsafe env = function
           let subst = unify lparams largs in
           let ty = apply subst ty in
           (*if not is_unsafe then used_var_type env ty;*)
+          clean_gdecl_ty (snd decl);
           EVar (ty, id, largs)
       | item ->
           failwith ("type_expr is_unsafe env: var " ^ Syntax.show_item_ item))
@@ -535,12 +553,12 @@ let rec type_expr is_unsafe env = function
         | (_, Syntax.TVarArgs) :: [], Syntax.AExpr expr :: args ->
             let expr = type_expr is_unsafe env expr in
             let ty = get_expr_ty expr in
-            if not is_unsafe then used_var_type env ty;
+            used_var_type env ty;
             Syntax.AExpr expr :: type_args params args
         | (_, param_ty) :: params, Syntax.AExpr expr :: args ->
             let expr = type_expr is_unsafe env expr in
             let arg_ty = get_expr_ty expr in
-            if not is_unsafe then drop_passing param_ty arg_ty;
+            drop_passing param_ty arg_ty;
             Syntax.AExpr expr :: type_args params args
         | (_, TBlock dep) :: params, Syntax.ADepth depth :: args
           when dep = depth ->
@@ -548,7 +566,16 @@ let rec type_expr is_unsafe env = function
         | [], [] -> []
         | _ -> failwith "type_args"
       in
-      let args = type_args params args in
+      let rec conv_args = function
+        | [] -> []
+        | Syntax.AExpr expr :: args ->
+            let expr = type_expr is_unsafe env expr in
+            Syntax.AExpr expr :: conv_args args
+        | Syntax.ADepth depth :: args -> Syntax.ADepth depth :: conv_args args
+      in
+      let args =
+        if not is_unsafe then type_args params args else conv_args args
+      in
       EPostfix (ret, expr, PCall args)
   | Syntax.EPostfix (expr, PIdx idx) -> (
       let expr = type_expr is_unsafe env expr in

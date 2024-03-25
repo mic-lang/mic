@@ -217,11 +217,11 @@ lparam:
 | KIND ident                              { ignore(push_lparam (Kind $2)); LKind (User $2) }
 
 decl:
-| decl_specs                          { make_decls_with_init $1 [((DeclIdent ""), None)] (lookup_last_depth ()) }
+| decl_specs enter_scope_first leave_scope_last                         { make_decls_with_init $1 [((DeclIdent ""), None)] (lookup_last_depth ()) }
 | decl_specs enter_scope_first init_declarator_list leave_scope_last    { make_decls_with_init $1 $3 (lookup_last_depth ()) }
 
 gdecl:
-| decl_specs                          { [push_def (GDecl (make_decl $1 (DeclIdent "")))] }
+| decl_specs enter_scope_first leave_scope_last                         { [push_def (GDecl (make_decl $1 (DeclIdent "")))] }
 | decl_specs enter_scope_first init_declarator_list leave_scope_last    { make_gdecls_with_init $1 $3 }
 
 decl_spec:
@@ -230,11 +230,12 @@ decl_spec:
 | function_spec                           { [$1] }
 | type_spec                               { [$1] }
 
+
 decl_specs:
 | decl_specs_sub                          { TDeclSpec $1 }
-| TYPE_ID                                 { TDeclSpec [TsTypedef (Option.get (lookup_typedef1 $1))] }
 
 decl_specs_sub:
+| TYPE_ID                                 { [TsTypedef (Option.get (lookup_typedef1 $1))] }
 | decl_spec                               { $1 }
 | decl_specs_sub decl_spec                { $1 @ $2 }
 
@@ -352,7 +353,7 @@ declarator:
 | direct_declarator                       { $1 }
 
 direct_declarator:
-| ident                                   { DeclIdent $1 }
+| ident                                  { DeclIdent $1 }
 | "(" id_declarator ")"                   { $2 }
 | direct_declarator "[" constant_expr "]" { DeclArr($1,$3) }
 | direct_declarator "(" parameter_type_list ")"
@@ -371,6 +372,8 @@ direct_id_declarator:
 | direct_id_declarator "[" constant_expr "]" { DeclArr($1,$3) }
 | direct_id_declarator "(" parameter_type_list ")"
                                           { DeclFun($1,$3) }
+
+
 
 depth_qualifer:
 | STATIC                                  { Static }
@@ -533,10 +536,10 @@ external_decl:
 | ";"                                     { [] }
 
 ldecl:
-| lifetime_declaration decl_specs enter_scope_first enter_scope declarator leave_scope leave_scope_last { LDecl($1, make_decl $2 $5) }
+| lifetime_declaration decl_specs enter_scope_first declarator leave_scope_last { LDecl($1, make_decl $2 $4) }
 
 function_def:
 | decl_specs enter_scope_first declarator no_depth "{" list(item) "}" leave_scope_last    { FunctionDef(make_decl $1 $3, $8, SStmts(Depth(fst $4, snd $4), $6)) }
 | decl_specs enter_scope_first declarator using_depth "{" list(item) "}" leave_scope_last    { FunctionDef(make_decl $1 $3, $8, SStmts(Depth(fst $4, snd $4), $6)) }
-| lifetime_declaration decl_specs enter_scope_first enter_scope declarator no_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef($1, make_decl $2 $5, $11, SStmts(Depth(fst $6, snd $6), $8)) }
-| lifetime_declaration decl_specs enter_scope_first enter_scope declarator using_depth "{" list(item) "}" leave_scope leave_scope_last    { LFunctionDef($1, make_decl $2 $5, $11, SStmts(Depth(fst $6, snd $6), $8)) }
+| lifetime_declaration decl_specs enter_scope_first declarator no_depth "{" list(item) "}" leave_scope_last    { LFunctionDef($1, make_decl $2 $4, $9, SStmts(Depth(fst $5, snd $5), $7)) }
+| lifetime_declaration decl_specs enter_scope_first declarator using_depth "{" list(item) "}" leave_scope_last    { LFunctionDef($1, make_decl $2 $4, $9, SStmts(Depth(fst $5, snd $5), $7)) }
