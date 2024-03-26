@@ -1,4 +1,5 @@
 type expr =
+  | EBuildin of expr Syntax.buildin
   | EConst of expr Syntax.ty * Syntax.value
   | EVar of expr Syntax.ty * Syntax.id * Syntax.lparam list
   | EBinary of expr Syntax.ty * Syntax.binary * expr * expr
@@ -19,6 +20,7 @@ and pointer = expr Syntax.pointer [@@deriving show]
 let program : typed_program ref = ref []
 
 let get_expr_ty = function
+  | EBuildin _ -> Syntax.TDeclSpec [ TsVoid ]
   | EConst (ty, _)
   | EVar (ty, _, _)
   | EBinary (ty, _, _, _)
@@ -129,6 +131,7 @@ let rec type_conv =
           failwith "type_conv aa")
   | TBlock depth -> TBlock depth
   | TVarArgs -> TVarArgs
+  | TVarlist -> TVarlist
 
 let used_var_type env ty =
   match Syntax.get_contents_ty ty with
@@ -269,6 +272,7 @@ let rec apply subst =
       TDeclSpec (List.map f l)
   | TBlock depth -> TBlock depth
   | TVarArgs -> TVarArgs
+  | TVarlist -> TVarlist
 
 let rec check_ty =
   let open Syntax in
@@ -306,7 +310,17 @@ let is_compatible_ptr lptr rptr =
       { pointee_depth = rdep; pointee_kind = rkind; _ } ) ->
       ldep = rdep && lkind = rkind
 
-let rec type_expr is_unsafe env = function
+let rec type_buildin is_unsafe env =
+  let open Syntax in
+  function
+  | VarStart (l, r) ->
+      VarStart (type_expr is_unsafe env l, type_expr is_unsafe env r)
+  | VarArg (l, r) ->
+      VarArg (type_expr is_unsafe env l, type_expr is_unsafe env r)
+  | VarEnd e -> VarEnd (type_expr is_unsafe env e)
+
+and type_expr is_unsafe env = function
+  | Syntax.EBuildin buildin -> EBuildin (type_buildin is_unsafe env buildin)
   | Syntax.EConst v -> (
       match v with
       | VStr _ ->

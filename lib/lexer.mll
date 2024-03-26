@@ -138,6 +138,10 @@ rule token = parse
 | (fnum as f) [ 'f' 'F' ]?      { FLOAT (f) }
 | (fnum as f) [ 'l' 'L' ]       { FLOAT( f) }
 | '"'                           { STR (string "" lexbuf) }
+| "__builtin_va_start"          { VA_START }
+| "__builtin_va_arg"            { VA_ARG }
+| "__builtin_va_end"            { VA_END }
+| "__builtin_va_list"           { VA_LIST }
 | ident  as n                   { 
                                     try match snd (lookup_id_kind n) with
                                     | IdUsual -> ID n

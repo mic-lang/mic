@@ -68,7 +68,13 @@ and ty_ = expr ty [@@deriving show]
 and desig = expr design [@@deriving show]
 and item_ = expr item [@@deriving show]
 
+and 'expr buildin =
+  | VarStart of 'expr * 'expr
+  | VarArg of 'expr * 'expr
+  | VarEnd of 'expr
+
 and expr =
+  | EBuildin of expr buildin
   | EConst of value
   | EVar of id * lparam list
   | EBinary of binary * expr * expr
@@ -128,6 +134,7 @@ and 'expr ty =
   | TDeclSpec of ds list
   | TBlock of depth
   | TVarArgs
+  | TVarlist
 [@@deriving show]
 
 and 'expr decl = string * 'expr ty [@@deriving show]

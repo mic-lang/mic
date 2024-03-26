@@ -1,9 +1,10 @@
 #ifndef _MIC_STDARG_H
 #define _MIC_STDARG_H
 
-#define va_arg(ap, type)   (*((type *)(ap = (type *)ap + 1) - 1))
-#define va_start(ap, arg)  (ap = &(arg) + 1)
-#define va_end(ap)         ((void) 0)
-typedef const char **va_list;
+#define va_start(v,l)	__builtin_va_start(v,l)
+#define va_end(v)	__builtin_va_end(v)
+#define va_arg(v,l)	__builtin_va_arg(v,l)
+
+typedef __builtin_va_list va_list;
 
 #endif  /* stdarg.h */

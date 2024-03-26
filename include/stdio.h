@@ -33,7 +33,7 @@ int vfprintf(FILE *, const char *, va_list);
 int vsprintf(char *, const char *, va_list);
 
 lifetime <depth p, kind a>
-inline static int mi_puts(const char p a* s) {
+inline static int mi_puts(char p a* s) {
     unsafe {
         return puts(s);
     }
