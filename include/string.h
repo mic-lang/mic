@@ -13,7 +13,7 @@ int strncmp(const char *, const char *, size_t);
 char *strncpy(char *, const char *, size_t);
 
 lifetime <depth p, kind a>
-inline static size_t mi_strlen(const char p a* s) {
+size_t inline static mi_strlen(const char p a* s) {
     unsafe {
         return strlen(s);
     }
@@ -27,7 +27,7 @@ inline static int mi_strcmp(const char p a* l, const char q b* r) {
 }
 
 lifetime <depth p, kind a>
-inline static size_t mi_strchr(const char p a* drop s, int) {
+size_t inline static mi_strchr(const char p a* drop s, int) {
     unsafe {
         return strchr(s);
     }
@@ -36,7 +36,7 @@ inline static size_t mi_strchr(const char p a* drop s, int) {
 lifetime <depth p, depth q, kind a, kind b>
 inline static int mi_strcpy(char p a* dst, const char q b* src) {
     unsafe {
-        return strcpy(l, r);
+        return strcpy(dst, src);
     }
 }
 

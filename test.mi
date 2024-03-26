@@ -16,6 +16,9 @@ struct X {
     int a;
 };
 
+typedef long unsigned int size_t;
+size_t strlen(const char *);
+
 struct X<static, dyn>* y;
 
 extern int printf(const char *, ...);

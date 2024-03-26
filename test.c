@@ -24,9 +24,11 @@ struct X {
     void *x;
     int a;
 };
+typedef long unsigned int size_t;
+size_t strlen(const char *);
 struct X *y;
 extern int printf(const char *, ...);
-extern void *malloc(mi_heap_t*, int size);
+extern void *malloc(mi_heap_t* p, int size);
 extern void free(void *ptr);
 
 int main() {
