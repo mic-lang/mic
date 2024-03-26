@@ -208,13 +208,13 @@ constant_expr:
 | conditional_expr                        { $1 }
 
 lifetime_declaration:
-| LIFETIME LT separated_list(",", lparam) GT { in_lparams := true; $3 }
+| LIFETIME LT separated_list(",", lparam) GT { $3 }
 
 lparam:
 | DEPTH ident                             
                                           { let depth = get_curr_depth () in
-                                            ignore(push_lparam_depth (Block ($2, depth))); LBlock (Depth ($2, depth)) }
-| KIND ident                              { ignore(push_lparam (Kind $2)); LKind (User $2) }
+                                            ignore(push_def_ (Block ($2, depth))); LBlock (Depth ($2, depth)) }
+| KIND ident                              { ignore(push_def (Kind $2)); LKind (User $2) }
 
 decl:
 | decl_specs enter_scope_first leave_scope_last                         { make_decls_with_init $1 [((DeclIdent ""), None)] (lookup_last_depth ()) }
@@ -539,7 +539,5 @@ ldecl:
 | lifetime_declaration decl_specs enter_scope_first declarator leave_scope_last { LDecl($1, make_decl $2 $4) }
 
 function_def:
-| decl_specs enter_scope_first declarator no_depth "{" list(item) "}" leave_scope_last    { FunctionDef(make_decl $1 $3, $8, SStmts(Depth(fst $4, snd $4), $6)) }
-| decl_specs enter_scope_first declarator using_depth "{" list(item) "}" leave_scope_last    { FunctionDef(make_decl $1 $3, $8, SStmts(Depth(fst $4, snd $4), $6)) }
-| lifetime_declaration decl_specs enter_scope_first declarator no_depth "{" list(item) "}" leave_scope_last    { LFunctionDef($1, make_decl $2 $4, $9, SStmts(Depth(fst $5, snd $5), $7)) }
-| lifetime_declaration decl_specs enter_scope_first declarator using_depth "{" list(item) "}" leave_scope_last    { LFunctionDef($1, make_decl $2 $4, $9, SStmts(Depth(fst $5, snd $5), $7)) }
+| decl_specs enter_scope_first declarator compound_stmt leave_scope_last    { FunctionDef(make_decl $1 $3, $5, $4) }
+| lifetime_declaration decl_specs enter_scope_first declarator compound_stmt leave_scope_last    { LFunctionDef($1, make_decl $2 $4, $6, $5) }

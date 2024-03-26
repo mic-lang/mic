@@ -13,7 +13,7 @@ void test_heap(void p dyn* p_out) using q {
 
 int main() using p {
 
-  test_heap(mi_malloc<p>(p, 32));
+  test_heap<p>(mi_malloc<p>(p, 32));
 
   //mi_collect(true);
   //mi_stats_print(NULL);

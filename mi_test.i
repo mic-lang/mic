@@ -181,8 +181,8 @@ inline static void mi_free(void p dyn* drop ptr) {
 # 1 "include/stdbool.h" 1
 # 5 "mi_test.c" 2
 
-
-void test_heap(void dyn* p_out) using q {
+lifetime <depth p>
+void test_heap(void p dyn* p_out) using q {
   void q dyn* p1 = mi_malloc<q>(q,32);
   void q dyn* p2 = mi_malloc<q>(q,48);
   mi_free<p>(p_out);
@@ -191,7 +191,7 @@ void test_heap(void dyn* p_out) using q {
 
 int main() using p {
 
-  test_heap(mi_malloc<p>(p, 32));
+  test_heap<p>(mi_malloc<p>(p, 32));
 
 
 

@@ -1,7 +1,7 @@
 lifetime <depth p, depth q, kind a>
 static struct X<p, a> func(struct X<p,a> c, int p* b) using r {
     b;
-    struct X<static, dyn>* y;
+    struct X<r, dyn>* y;
     struct Y {int x;int y;};
     return (struct X<p,dyn>){0};
 }
