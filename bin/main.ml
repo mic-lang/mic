@@ -48,11 +48,11 @@ let () =
       (*print_endline
         (Mic.Syntax.show_programi
            (List.mapi (fun i x -> (i, x)) (List.rev !Mic.Env.program)));*)
-      print_endline
+      (*print_endline
         (Mic.Typing.show_typed_programi
            (List.mapi
               (fun i x -> (i, x))
-              (Mic.Typing.type_program (List.rev !Mic.Env.program))));
+              (Mic.Typing.type_program (List.rev !Mic.Env.program))));*)
       let program = Mic.Cgen.gen_program (List.rev !Mic.Env.program) in
       let outchan = open_out tmp in
       Printf.fprintf outchan "%s" program;
