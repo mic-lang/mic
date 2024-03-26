@@ -102,6 +102,9 @@ postfix_expr:
                                           { match $3 with
                                             | Some l -> EPostfix($1,PCall l)
                                             | None -> EPostfix($1,PCall []) }
+| VA_START "(" assignment_expr "," assignment_expr ")"          { EBuildin (VarStart ($3, $5)) }
+| VA_ARG "(" assignment_expr "," assignment_expr ")"            { EBuildin (VarArg ($3, $5)) }
+| VA_END "(" assignment_expr ")"          { EBuildin (VarEnd $3) }
 | postfix_expr "." ident                  { EPostfix($1,PDot $3) }
 | postfix_expr "->" ident                 { EPostfix($1,PArrow $3) }
 | postfix_expr "++"                       { EPostfix($1,PInc) }
@@ -268,7 +271,7 @@ type_spec:
 | TUNSIGNED                               { TsUnsigned }
 | struct_or_union_spec                    { $1 }
 | enum_spec                               { TsInt }
-
+| VA_LIST                                 { TsVarlist }
 
 spec_qual_list:
 | spec_qual_list_sub                      { $1 }

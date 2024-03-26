@@ -109,7 +109,7 @@ let rec type_conv =
         List.exists
           (function
             | TsBool | TsInt | TsShort | TsLong | TsChar | TsSigned | TsUnsigned
-            | TsFloat | TsDouble ->
+            | TsFloat | TsDouble | TsVarlist ->
                 true
             | _ -> false)
           l
@@ -131,7 +131,6 @@ let rec type_conv =
           failwith "type_conv aa")
   | TBlock depth -> TBlock depth
   | TVarArgs -> TVarArgs
-  | TVarlist -> TVarlist
 
 let used_var_type env ty =
   match Syntax.get_contents_ty ty with
@@ -272,7 +271,6 @@ let rec apply subst =
       TDeclSpec (List.map f l)
   | TBlock depth -> TBlock depth
   | TVarArgs -> TVarArgs
-  | TVarlist -> TVarlist
 
 let rec check_ty =
   let open Syntax in

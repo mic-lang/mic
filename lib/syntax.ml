@@ -134,12 +134,12 @@ and 'expr ty =
   | TDeclSpec of ds list
   | TBlock of depth
   | TVarArgs
-  | TVarlist
 [@@deriving show]
 
 and 'expr decl = string * 'expr ty [@@deriving show]
 
 and ds =
+  | TsVarlist
   | TsBool
   | TsInt
   | TsShort

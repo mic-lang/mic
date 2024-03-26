@@ -45,6 +45,7 @@ let rec gen_declspec nest = function
       match List.nth (List.rev !Env.program) id with
       | Decl ((name, _), _, _) | GDecl (name, _) -> name
       | _ -> failwith "gen_declspec")
+  | TsVarlist -> "__builtin_va_list"
   | ScsTypedef -> "typedef"
   | ScsExtern -> "extern"
   | ScsStatic -> "static"
@@ -128,7 +129,14 @@ and gen_value = function
   | VStr str -> "\"" ^ str ^ "\""
   | VNull -> "NULL"
 
+and gen_buildin = function
+  | VarStart (l, r) ->
+      "__builtin_va_start (" ^ gen_expr l ^ ", " ^ gen_expr r ^ ")"
+  | VarArg (l, r) -> "__builtin_va_arg (" ^ gen_expr l ^ ", " ^ gen_expr r ^ ")"
+  | VarEnd e -> "__builtin_va_end (" ^ gen_expr e ^ ")"
+
 and gen_expr = function
+  | EBuildin buildin -> gen_buildin buildin
   | EConst v -> gen_value v
   | EVar (id, _) -> (
       match List.nth (List.rev !Env.program) id with
