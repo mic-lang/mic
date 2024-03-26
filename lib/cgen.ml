@@ -126,7 +126,7 @@ and gen_unop = function
 and gen_value = function
   | VChar str -> "'" ^ str ^ "'"
   | VInt str | VFloat str -> str
-  | VStr str -> "\"" ^ str ^ "\""
+  | VStr str -> "\"" ^ String.escaped str ^ "\""
   | VNull -> "NULL"
 
 and gen_buildin = function

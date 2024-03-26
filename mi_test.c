@@ -111,6 +111,6 @@ int main() {
         mi_heap_destroy(p);
     }
     mi_collect(1);
-    mi_printf("hello, world!, %d", 5);
+    mi_printf("hello, world!, %d\n", 5);
     return 0;
 }
