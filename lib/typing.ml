@@ -106,7 +106,7 @@ let rec type_conv =
       if
         List.exists
           (function
-            | TsInt | TsShort | TsLong | TsChar | TsSigned | TsUnsigned
+            | TsBool | TsInt | TsShort | TsLong | TsChar | TsSigned | TsUnsigned
             | TsFloat | TsDouble ->
                 true
             | _ -> false)

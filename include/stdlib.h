@@ -15,50 +15,20 @@ void srand(unsigned);
 struct mi_heap_s;
 typedef struct mi_heap_s mi_heap_t;
 mi_heap_t* mi_heap_new(void);
-void       mi_heap_delete(mi_heap_t* heap);
-void       mi_heap_destroy(mi_heap_t* heap);
-void* mi_heap_malloc(mi_heap_t* heap, size_t size);
-void* mi_heap_zalloc(mi_heap_t* heap, size_t size);
-void* mi_heap_calloc(mi_heap_t* heap, size_t count, size_t size);
-void* mi_heap_realloc(mi_heap_t* heap, void* p, size_t newsize);
-void mi_free(void* p);
+void       mi_heap_delete(mi_heap_t*);
+void       mi_heap_destroy(mi_heap_t*);
+lifetime <depth p>
+void p dyn* mi_heap_malloc(depth p, size_t size);
+lifetime <depth p>
+void p dyn* mi_heap_zalloc(depth p, size_t size);
+lifetime <depth p>
+void p dyn* mi_heap_calloc(depth p, size_t count, size_t size);
+lifetime <depth p>
+void p dyn* mi_heap_realloc(depth p, void* ptr, size_t newsize);
+lifetime <depth p>
+void mi_free(void p dyn* drop p);
 
 void mi_collect(bool force);
 void mi_stats_print(void* out);
-
-lifetime <depth p>
-inline static void p dyn* mi_malloc(depth p, size_t size) {
-    unsafe {
-        //return mi_heap_malloc(p, size);
-    }
-}
-
-lifetime <depth p>
-inline static void p dyn* mi_zalloc(depth p, size_t size) {
-    unsafe {
-        return mi_heap_zalloc(p, size);
-    }
-}
-
-lifetime <depth p>
-inline static void p dyn* mi_calloc(depth p, size_t count, size_t size) {
-    unsafe {
-        return mi_heap_calloc(p, count, size);
-    }
-}
-
-lifetime <depth p>
-inline static void p dyn* mi_realloc(depth p, void p dyn* ptr, size_t new_size) {
-    unsafe {
-        return mi_heap_realloc(p, ptr, new_size);
-    }
-}
-
-lifetime <depth p>
-inline static void mi_free(void p dyn* drop ptr) {
-    unsafe {
-        return mi_free(ptr);
-    }
-}
 
 #endif  /* stdlib.h */

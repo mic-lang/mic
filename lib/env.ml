@@ -271,8 +271,7 @@ let lookup_id_kind name =
         | Lparam x, Lparam y -> -compare x y)
       dic
   with
-  | [] ->
-      failwith "lookup_id_kind"
+  | [] -> failwith "lookup_id_kind"
   | x :: _ -> x
 
 let lookup_var name =

@@ -133,6 +133,7 @@ and 'expr ty =
 and 'expr decl = string * 'expr ty [@@deriving show]
 
 and ds =
+  | TsBool
   | TsInt
   | TsShort
   | TsLong

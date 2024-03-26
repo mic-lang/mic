@@ -19,7 +19,7 @@ int fputc(int, FILE *);
 int getc(FILE *);
 int fgetc(FILE *);
 int puts(char *);
-int fputs(char *, FILE *);
+int fputs(const char *, FILE *);
 char *fgets(char *, int, FILE *);
 char *gets(char *);
 
@@ -79,7 +79,7 @@ inline static int mi_fprintf(FILE* fp, const char p a* fmt, ...) {
 }
 
 lifetime <depth p, depth q, kind a, kind b>
-inline static int mi_sprintf(const char p a* s, const char q b* fmt, ...) {
+inline static int mi_sprintf(char p a* s, const char q b* fmt, ...) {
     unsafe {
         va_list ap;
         va_start(ap, fmt);

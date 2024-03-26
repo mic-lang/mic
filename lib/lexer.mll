@@ -42,6 +42,7 @@ rule token = parse
 | '\n'        { Lexing.new_line lexbuf; token lexbuf }
 | ';'         { SEMI }
 | ','         { COMMA }
+| "bool"      { TBOOL }
 | "int"       { TINT }
 | "long"      { TLONG }
 | "short"     { TSHORT }

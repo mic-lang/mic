@@ -53,7 +53,7 @@ let conv_ident = function
 %token SUB_EQ "-=" LSHIFT_EQ "<<=" RSHIFT_EQ ">>=" AND_EQ "&="
 %token XOR_EQ "^=" OR_EQ "|="
 %token TYPEDEF EXTERN STATIC AUTO REGISTER
-%token TCHAR TSHORT TINT TLONG TSIGNED TUNSIGNED TFLOAT TDOUBLE CONST VOLATILE TVOID
+%token TCHAR TSHORT TBOOL TINT TLONG TSIGNED TUNSIGNED TFLOAT TDOUBLE CONST VOLATILE TVOID
 %token STRUCT UNION ENUM UNSAFE
 %token CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
 %token DYN DROP USING DEPTH KIND LIFETIME NULL
@@ -259,6 +259,7 @@ type_spec:
 | TVOID                                   { TsVoid }
 | TCHAR                                   { TsChar }
 | TSHORT                                  { TsShort }
+| TBOOL                                   { TsBool }
 | TINT                                    { TsInt }
 | TLONG                                   { TsLong }
 | TFLOAT                                  { TsFloat }

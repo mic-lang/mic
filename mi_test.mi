@@ -5,17 +5,19 @@
 
 lifetime <depth p>
 void test_heap(void p dyn* p_out) using q {
-  void q dyn* p1 = mi_malloc<q>(q,32);
-  void q dyn* p2 = mi_malloc<q>(q,48);
+  void q dyn* p1 = mi_heap_malloc<q>(q,32);
+  void q dyn* p2 = mi_heap_malloc<q>(q,48);
   mi_free<p>(p_out);
   mi_free<q>(p1); mi_free<q>(p2);
 }
 
-int main() using p {
-
-  test_heap<p>(mi_malloc<p>(p, 32));
-
-  //mi_collect(true);
-  //mi_stats_print(NULL);
+int main() {
+  
+  using p {
+    test_heap<p>(mi_heap_malloc<p>(p, 32));
+  }
+  mi_collect(true);
+  //mi_stats_print(null);
+  mi_printf<static, static>("hello, world!, %d", 5);
   return 0;
 }

@@ -3,6 +3,7 @@ open Syntax
 let gen_ident nests str = String.make (nests * 4) ' ' ^ str
 
 let rec gen_declspec nest = function
+  | TsBool -> "bool"
   | TsInt -> "int"
   | TsShort -> "short"
   | TsLong -> "long"
@@ -75,6 +76,7 @@ and gen_decl nest str = function
   | TArr (ty, expr) -> gen_decl nest (str ^ "[" ^ gen_expr expr ^ "]") ty
   | TFun (ty, l) -> gen_decl nest (str ^ "(" ^ gen_params nest l ^ ")") ty
   | TDeclSpec l -> gen_declspecs nest l ^ if str = "" then "" else " " ^ str
+  | TBlock (Depth (name, _)) -> "mi_heap_t* " ^ name
   | TBlock _ -> "mi_heap_t*"
   | TVarArgs -> "..."
 

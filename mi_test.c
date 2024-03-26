@@ -4,7 +4,7 @@
 
 #include <stddef.h>
 
-typedef char *va_list;
+typedef const char **va_list;
 typedef long unsigned int size_t;
 typedef long int ptrdiff_t;
 typedef struct _IO_FILE FILE;
@@ -18,7 +18,7 @@ int fputc(int, FILE *);
 int getc(FILE *);
 int fgetc(FILE *);
 int puts(char *);
-int fputs(char *, FILE *);
+int fputs(const char *, FILE *);
 char *fgets(char *, int, FILE *);
 char *gets(char *);
 int printf(const char *, ...);
@@ -68,7 +68,7 @@ inline static int mi_fprintf(FILE *fp, const char *fmt, ...) {
     }
 }
 
-inline static int mi_sprintf(const char *s, const char *fmt, ...) {
+inline static int mi_sprintf(char *s, const char *fmt, ...) {
     {
         va_list ap;
         (ap = ((&fmt) + 1));
@@ -84,48 +84,20 @@ void srand(unsigned);
 struct mi_heap_s;
 typedef struct mi_heap_s mi_heap_t;
 mi_heap_t *mi_heap_new(void);
-void mi_heap_delete(mi_heap_t *heap);
-void mi_heap_destroy(mi_heap_t *heap);
-void *mi_heap_malloc(mi_heap_t *heap, size_t size);
-void *mi_heap_zalloc(mi_heap_t *heap, size_t size);
-void *mi_heap_calloc(mi_heap_t *heap, size_t count, size_t size);
-void *mi_heap_realloc(mi_heap_t *heap, void *p, size_t newsize);
+void mi_heap_delete(mi_heap_t *);
+void mi_heap_destroy(mi_heap_t *);
+void *mi_heap_malloc(mi_heap_t* p, size_t size);
+void *mi_heap_zalloc(mi_heap_t* p, size_t size);
+void *mi_heap_calloc(mi_heap_t* p, size_t count, size_t size);
+void *mi_heap_realloc(mi_heap_t* p, void *ptr, size_t newsize);
 void mi_free(void *p);
-void mi_collect(int force);
+void mi_collect(bool force);
 void mi_stats_print(void *out);
-
-inline static void *mi_malloc(mi_heap_t*, size_t size) {
-
-}
-
-inline static void *mi_zalloc(mi_heap_t*, size_t size) {
-    {
-        return mi_heap_zalloc(p, size);
-    }
-}
-
-inline static void *mi_calloc(mi_heap_t*, size_t count, size_t size) {
-    {
-        return mi_heap_calloc(p, count, size);
-    }
-}
-
-inline static void *mi_realloc(mi_heap_t*, void *ptr, size_t new_size) {
-    {
-        return mi_heap_realloc(p, ptr, new_size);
-    }
-}
-
-inline static void mi_free(void *ptr) {
-    {
-        return mi_free(ptr);
-    }
-}
 
 void test_heap(void *p_out) {
     mi_heap_t* q = mi_heap_new();
-    void *p1 = mi_malloc(q, 32);
-    void *p2 = mi_malloc(q, 48);
+    void *p1 = mi_heap_malloc(q, 32);
+    void *p2 = mi_heap_malloc(q, 48);
     mi_free(p_out);
     mi_free(p1);
     mi_free(p2);
@@ -133,8 +105,12 @@ void test_heap(void *p_out) {
 }
 
 int main() {
-    mi_heap_t* p = mi_heap_new();
-    test_heap(mi_malloc(p, 32));
+    {
+        mi_heap_t* p = mi_heap_new();
+        test_heap(mi_heap_malloc(p, 32));
+        mi_heap_destroy(p);
+    }
+    mi_collect(1);
+    mi_printf("hello, world!, %d", 5);
     return 0;
-    mi_heap_destroy(p);
 }
