@@ -56,9 +56,10 @@ let () =
       let program = Mic.Cgen.gen_program (List.rev !Mic.Env.program) in
       let outchan = open_out tmp in
       Printf.fprintf outchan "%s" program;
+      close_out outchan;
       let tmp = tmp_file1 tmp in
-      print_endline (out_file tmp);
-      ignore (Sys.command ("gcc " ^ tmp ^ " -o " ^ out_file tmp ^ " -lmimalloc"));
+      ignore
+        (Sys.command ("gcc " ^ tmp ^ " -o " ^ out_file tmp ^ " -lmimalloc"))
     with
     | Failure msg -> show_error "%s" msg
     | _ ->
