@@ -2,6 +2,7 @@
 #include "include/assert.h"
 #include "include/stdlib.h"
 #include "include/stdbool.h"
+#include "include/string.h"
 
 lifetime <depth p>
 void test_heap(void p dyn* p_out) using q {

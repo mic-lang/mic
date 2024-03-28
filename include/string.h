@@ -13,7 +13,7 @@ int strncmp(const char *, const char *, size_t);
 char *strncpy(char *, const char *, size_t);
 
 lifetime <depth p, kind a>
-size_t inline static mi_strlen(const char p a* s) {
+inline static size_t mi_strlen(const char p a* s) {
     unsafe {
         return strlen(s);
     }
@@ -27,16 +27,17 @@ inline static int mi_strcmp(const char p a* l, const char q b* r) {
 }
 
 lifetime <depth p, kind a>
-size_t inline static mi_strchr(const char p a* drop s, int) {
+inline static const char p a* mi_strchr(const char p a* drop s, int c) {
     unsafe {
-        return strchr(s);
+        return strchr(s, c);
     }
 }
 
 lifetime <depth p, depth q, kind a, kind b>
-inline static int mi_strcpy(char p a* dst, const char q b* src) {
+inline static void mi_strcpy(char p a* dst, const char q b* src) {
     unsafe {
-        return strcpy(dst, src);
+        strcpy(dst, src);
+        return;
     }
 }
 
@@ -64,9 +65,10 @@ inline static int mi_strncmp(const char p a* l, const char q b* r, size_t size) 
 }
 
 lifetime <depth p, depth q, kind a, kind b>
-inline static int mi_strncpy(char p a* dst, const char q b* src, size_t size) {
+inline static void mi_strncpy(char p a* dst, const char q b* src, size_t size) {
     unsafe {
-        return strncpy(dst, src, size);
+        strncpy(dst, src, size);
+        return;
     }
 }
 

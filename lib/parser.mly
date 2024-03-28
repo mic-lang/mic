@@ -228,19 +228,23 @@ gdecl:
 | decl_specs enter_scope_first init_declarator_list leave_scope_last    { make_gdecls_with_init $1 $3 }
 
 decl_spec:
-| storage_class_spec                      { [$1] }
-| type_qual                               { [$1] }
-| function_spec                           { [$1] }
-| type_spec                               { [$1] }
+| storage_class_spec                      { $1 }
+| type_qual                               { $1 }
+| function_spec                           { $1 }
 
 
 decl_specs:
-| decl_specs_sub                          { TDeclSpec $1 }
+| decl_specs_sub1                         { TDeclSpec $1 }
+| decl_specs_sub2                         { TDeclSpec $1 }
 
-decl_specs_sub:
-| TYPE_ID                                 { [TsTypedef (Option.get (lookup_typedef1 $1))] }
-| decl_spec                               { $1 }
-| decl_specs_sub decl_spec                { $1 @ $2 }
+decl_specs_sub1:
+| type_spec_unique list(decl_spec)         { $1::$2 }
+| decl_spec decl_specs_sub1                { $1::$2 }
+
+decl_specs_sub2:
+| type_spec_nonunique list(decl_spec)      { $1::$2 }
+| type_spec_nonunique decl_specs_sub2      { $1::$2 }
+| decl_spec decl_specs_sub2                { $1::$2 }
 
 init_declarator_list:
 | init_declarator                         { [$1] }
@@ -258,28 +262,23 @@ storage_class_spec:
 | AUTO                                    { ScsAuto }
 | REGISTER                                { ScsRegister }
 
-type_spec:
+type_spec_unique:
 | TVOID                                   { TsVoid }
+| TBOOL                                   { TsBool }
+| struct_or_union_spec                    { $1 }
+| enum_spec                               { TsInt }
+| VA_LIST                                 { TsVarlist }
+| TYPE_ID                                 { (TsTypedef (Option.get (lookup_typedef1 $1))) }
+
+type_spec_nonunique:
 | TCHAR                                   { TsChar }
 | TSHORT                                  { TsShort }
-| TBOOL                                   { TsBool }
 | TINT                                    { TsInt }
 | TLONG                                   { TsLong }
 | TFLOAT                                  { TsFloat }
 | TDOUBLE                                 { TsDouble }
 | TSIGNED                                 { TsSigned }
 | TUNSIGNED                               { TsUnsigned }
-| struct_or_union_spec                    { $1 }
-| enum_spec                               { TsInt }
-| VA_LIST                                 { TsVarlist }
-
-spec_qual_list:
-| spec_qual_list_sub                      { $1 }
-
-spec_qual_list_sub:
-| type_spec                               { $1::[] }
-| type_spec spec_qual_list_sub            { $1::$2 }
-| type_qual spec_qual_list_sub            { $1::$2 }
 
 type_qual:
 | CONST                                   { TqConst }
@@ -289,6 +288,18 @@ function_spec:
 | INLINE                                  { FsInline }
 | NORETURN                                { FsNoreturn }
 
+spec_qual_list:
+| spec_qual_list_sub1                     { $1 }
+| spec_qual_list_sub2                     { $1 }
+
+spec_qual_list_sub1:
+| type_spec_unique list(type_qual)        { $1::$2 }
+| type_qual spec_qual_list_sub1           { $1::$2 }
+
+spec_qual_list_sub2:
+| type_spec_nonunique list(type_qual)     { $1::$2 }
+| type_spec_nonunique spec_qual_list_sub2 { $1::$2 }
+| type_qual spec_qual_list_sub2           { $1::$2 }
 
 struct_or_union_spec:
 | STRUCT ident? "{" list(struct_decl) "}" { make_structdef

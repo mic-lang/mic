@@ -8,9 +8,9 @@
 
 typedef struct _IO_FILE FILE;
 
-FILE extern *stdin;
-FILE extern *stdout;
-FILE extern *stderr;
+extern FILE *stdin;
+extern FILE *stdout;
+extern FILE *stderr;
 
 int putchar(int);
 int getchar(void);

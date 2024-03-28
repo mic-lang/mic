@@ -8,9 +8,9 @@ typedef __builtin_va_list va_list;
 typedef long unsigned int size_t;
 typedef long int ptrdiff_t;
 typedef struct _IO_FILE FILE;
-FILE extern *stdin;
-FILE extern *stdout;
-FILE extern *stderr;
+extern FILE *stdin;
+extern FILE *stdout;
+extern FILE *stderr;
 int putchar(int);
 int getchar(void);
 int putc(int, FILE *);
@@ -93,6 +93,66 @@ void *mi_heap_realloc(mi_heap_t* p, void *ptr, size_t newsize);
 void mi_free(void *p);
 void mi_collect(bool force);
 void mi_stats_print(void *out);
+size_t strlen(const char *);
+int strcmp(const char *, const char *);
+char *strchr(const char *, int);
+char *strcpy(char *, const char *);
+void *memset(void *, int, size_t);
+void *memcpy(void *, const void *, size_t);
+int strncmp(const char *, const char *, size_t);
+char *strncpy(char *, const char *, size_t);
+
+inline static size_t mi_strlen(const char *s) {
+    {
+        return strlen(s);
+    }
+}
+
+inline static int mi_strcmp(const char *l, const char *r) {
+    {
+        return strcmp(l, r);
+    }
+}
+
+inline static const char *mi_strchr(const char *s, int c) {
+    {
+        return strchr(s, c);
+    }
+}
+
+inline static void mi_strcpy(char *dst, const char *src) {
+    {
+        strcpy(dst, src);
+return;
+    }
+}
+
+inline static void mi_memset(void *buf, int n, size_t size) {
+    {
+        memset(buf, n, size);
+return;
+    }
+}
+
+inline static void mi_memcpy(char *dst, void *src, size_t size) {
+    {
+        memcpy(dst, src, size);
+return;
+    }
+}
+
+inline static int mi_strncmp(const char *l, const char *r, size_t size) {
+    {
+        return strncmp(l, r, size);
+    }
+}
+
+inline static void mi_strncpy(char *dst, const char *src, size_t size) {
+    {
+        strncpy(dst, src, size);
+return;
+    }
+}
 
 void test_heap(void *p_out) {
     mi_heap_t* q = mi_heap_new();
