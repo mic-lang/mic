@@ -18,7 +18,7 @@ int main() {
   }
   mi_collect(true);
   //mi_stats_print(null);
-  mi_printf<static, static>("hello, world!, %d\n",  5);
+  mi_printf<static, static>("hello, world!\n");
 
   return 0;
 }
