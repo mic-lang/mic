@@ -63,27 +63,36 @@ inline static char p a* mi_gets(char p a* s) {
 lifetime <depth p, kind a>
 inline static int mi_printf(const char p a* fmt, ...) {
     unsafe {
+        int done;
         va_list ap;
         va_start(ap, fmt);
-        return vfprintf(stdout, fmt, ap);
+        done = vfprintf(stdout, fmt, ap);
+        va_end(ap);
+        return done;
     }
 }
 
 lifetime <depth p, kind a>
 inline static int mi_fprintf(FILE* fp, const char p a* fmt, ...) {
     unsafe {
+        int done;
         va_list ap;
         va_start(ap, fmt);
-        return vfprintf(fp, fmt, ap);
+        done = vfprintf(fp, fmt, ap);
+        va_end(ap);
+        return done;
     }
 }
 
 lifetime <depth p, depth q, kind a, kind b>
 inline static int mi_sprintf(char p a* s, const char q b* fmt, ...) {
     unsafe {
+        int done;
         va_list ap;
         va_start(ap, fmt);
-        return vsprintf(s, fmt, ap);
+        done = vsprintf(s, fmt, ap);
+        va_end(ap);
+        return done;
     }
 }
 
