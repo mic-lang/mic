@@ -1,9 +1,3 @@
-#include <mimalloc.h>
-
-#include <stdbool.h>
-
-#include <stddef.h>
-
 typedef __builtin_va_list va_list;
 typedef long unsigned int size_t;
 typedef long int ptrdiff_t;
@@ -54,25 +48,34 @@ inline static char *mi_gets(char *s) {
 
 inline static int mi_printf(const char *fmt, ...) {
     {
+        int done;
         va_list ap;
         __builtin_va_start (ap, fmt);
-        return vfprintf(stdout, fmt, ap);
+        (done = vfprintf(stdout, fmt, ap));
+        __builtin_va_end (ap);
+        return done;
     }
 }
 
 inline static int mi_fprintf(FILE *fp, const char *fmt, ...) {
     {
+        int done;
         va_list ap;
         __builtin_va_start (ap, fmt);
-        return vfprintf(fp, fmt, ap);
+        (done = vfprintf(fp, fmt, ap));
+        __builtin_va_end (ap);
+        return done;
     }
 }
 
 inline static int mi_sprintf(char *s, const char *fmt, ...) {
     {
+        int done;
         va_list ap;
         __builtin_va_start (ap, fmt);
-        return vsprintf(s, fmt, ap);
+        (done = vsprintf(s, fmt, ap));
+        __builtin_va_end (ap);
+        return done;
     }
 }
 void __assert_fail(const char *, const char *, int);
@@ -91,7 +94,7 @@ void *mi_heap_zalloc(mi_heap_t* p, size_t size);
 void *mi_heap_calloc(mi_heap_t* p, size_t count, size_t size);
 void *mi_heap_realloc(mi_heap_t* p, void *ptr, size_t newsize);
 void mi_free(void *p);
-void mi_collect(bool force);
+void mi_collect(_Bool force);
 void mi_stats_print(void *out);
 size_t strlen(const char *);
 int strcmp(const char *, const char *);

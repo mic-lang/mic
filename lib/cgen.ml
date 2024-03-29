@@ -3,7 +3,7 @@ open Syntax
 let gen_ident nests str = String.make (nests * 4) ' ' ^ str
 
 let rec gen_declspec nest = function
-  | TsBool -> "bool"
+  | TsBool -> "_Bool"
   | TsInt -> "int"
   | TsShort -> "short"
   | TsLong -> "long"
@@ -278,8 +278,5 @@ and gen_item_global = function
       "\n" ^ gen_decl 0 name ty ^ " " ^ gen_stmt 0 stmt ^ "\n"
   | _ -> ""
 
-let prelude =
-  "#include <mimalloc.h>\n\n#include <stdbool.h>\n\n#include <stddef.h>\n\n"
-
 let gen_program program =
-  prelude ^ String.concat "" (List.map gen_item_global program)
+  String.concat "" (List.map gen_item_global program)
