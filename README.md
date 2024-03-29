@@ -21,10 +21,6 @@ Read [The Mic Book](https://mic-lang.github.io/).
 
 ## Special Thanks.
 To implement this mic implemantation, I used following resources as the reference.
- https://github.com/jhjourdan/C11parser.
-
- https://github.com/keiichiw/ucc
- 
- https://github.com/rui314/chibicc
+ https://github.com/jhjourdan/C11parser  https://github.com/keiichiw/ucc  https://github.com/rui314/chibicc
 
  Thank you so much :)
