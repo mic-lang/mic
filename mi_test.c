@@ -89,10 +89,10 @@ typedef struct mi_heap_s mi_heap_t;
 mi_heap_t *mi_heap_new(void);
 void mi_heap_delete(mi_heap_t *);
 void mi_heap_destroy(mi_heap_t *);
-void *mi_heap_malloc(mi_heap_t* p, size_t size);
-void *mi_heap_zalloc(mi_heap_t* p, size_t size);
-void *mi_heap_calloc(mi_heap_t* p, size_t count, size_t size);
-void *mi_heap_realloc(mi_heap_t* p, void *ptr, size_t newsize);
+void *mi_heap_malloc(mi_heap_t *p, size_t size);
+void *mi_heap_zalloc(mi_heap_t *p, size_t size);
+void *mi_heap_calloc(mi_heap_t *p, size_t count, size_t size);
+void *mi_heap_realloc(mi_heap_t *p, void *ptr, size_t newsize);
 void mi_free(void *p);
 void mi_collect(_Bool force);
 void mi_stats_print(void *out);
@@ -158,7 +158,7 @@ return;
 }
 
 void test_heap(void *p_out) {
-    mi_heap_t* q = mi_heap_new();
+    mi_heap_t *q = mi_heap_new();
     void *p1 = mi_heap_malloc(q, 32);
     void *p2 = mi_heap_malloc(q, 48);
     mi_free(p_out);
@@ -169,11 +169,11 @@ void test_heap(void *p_out) {
 
 int main() {
     {
-        mi_heap_t* p = mi_heap_new();
+        mi_heap_t *p = mi_heap_new();
         test_heap(mi_heap_malloc(p, 32));
         mi_heap_destroy(p);
     }
     mi_collect(1);
-    mi_printf("hello, world!\n");
+    mi_stats_print(0);
     return 0;
 }

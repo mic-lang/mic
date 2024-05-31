@@ -127,8 +127,7 @@ let rec type_conv =
           in
           TDeclSpec [ e ]
         with _ ->
-          print_endline (Syntax.show_ty_ ty);
-          failwith "type_conv aa")
+          TDeclSpec [ TsInt ])
   | TBlock depth -> TBlock depth
   | TVarArgs -> TVarArgs
 
@@ -178,7 +177,7 @@ let apply_depth subst =
   | Syntax.Depth (name, _) when List.mem_assoc name subst -> (
       match List.assoc name subst with
       | LBlock blk -> blk
-      | _ -> failwith "apply_depth")
+      | _ -> failwith "internal error;apply_depth")
   | depth -> depth
 
 let apply_kind subst =
@@ -187,7 +186,7 @@ let apply_kind subst =
   | User name when List.mem_assoc name subst -> (
       match List.assoc name subst with
       | LKind kind -> kind
-      | _ -> failwith "apply_kind")
+      | _ -> failwith "internal eroor;apply_kind")
   | kind -> kind
 
 let apply_lparams subst =
@@ -395,7 +394,7 @@ and type_expr is_unsafe env = function
           clean_gdecl_ty (snd decl);
           EVar (ty, id, largs)
       | item ->
-          failwith ("type_expr is_unsafe env: var " ^ Syntax.show_item_ item))
+          failwith "internal error"
   | Syntax.EBinary
       ( (( Add | Sub | Mul | Div | Mod | LShift | RShift | BitAnd | BitXor
          | BitOr ) as bin),
@@ -507,7 +506,7 @@ and type_expr is_unsafe env = function
                 },
               Ref,
               expr )
-      | _ -> failwith "not lvalue")
+      | _ -> failwith "not a lvalue")
   | Syntax.EUnary (Deref, expr) -> (
       let expr = type_expr is_unsafe env expr in
       let expr_ty = Syntax.get_contents_ty (get_expr_ty expr) in
@@ -637,7 +636,7 @@ and type_expr is_unsafe env = function
                     },
                   expr,
                   PDot name )
-          | _ -> failwith "type_expr is_unsafe env: dot")
+          | _ -> failwith "internal error")
       | TVar
           {
             ownership;
@@ -659,8 +658,8 @@ and type_expr is_unsafe env = function
                     },
                   expr,
                   PDot name )
-          | _ -> failwith "type_expr is_unsafe env: dot")
-      | _ -> failwith "type_expr is_unsafe env: dot")
+          | _ -> failwith "internal error")
+      | _ -> failwith "not a lvalue")
   | Syntax.EPostfix (expr, PArrow name) -> (
       let expr = type_expr is_unsafe env expr in
       match get_expr_ty expr with
@@ -689,7 +688,7 @@ and type_expr is_unsafe env = function
                         },
                       expr,
                       PArrow name )
-              | _ -> failwith "type_expr is_unsafe env: arrow")
+              | _ -> failwith "internal error")
           | TDeclSpec [ (TsStructDef id | TsUnionDef id) ] -> (
               match List.nth (List.rev !Env.program) id with
               | StructDef (_, [], mems) | UnionDef (_, [], mems) ->
@@ -704,11 +703,11 @@ and type_expr is_unsafe env = function
                         },
                       expr,
                       PArrow name )
-              | _ -> failwith "type_expr is_unsafe env: arrow")
-          | _ -> failwith "type_expr is_unsafe env: not a compound type")
+              | _ -> failwith "internal error")
+          | _ -> failwith "not a compound type")
       | _ ->
           print_endline (show_ty (Syntax.get_base_ty (get_expr_ty expr)));
-          failwith "type_expr is_unsafe env: arrow")
+          failwith "not a lvalue")
   | Syntax.EPostfix (expr, ((PInc | PDec) as postfix)) ->
       EPostfix
         ( Syntax.get_contents_ty (get_expr_ty (type_expr is_unsafe env expr)),
@@ -765,12 +764,12 @@ and type_init is_unsafe env ty init =
           let mems =
             match List.nth (List.rev !Env.program) id with
             | StructDef (_, _, mems) -> mems
-            | _ -> failwith "type_init is_unsafe env"
+            | _ -> failwith "internal error"
           in
           let rec aux loc mems l =
             match (mems, l) with
             | _, [] -> []
-            | [], _ -> failwith "type_init is_unsafe env: excess elements"
+            | [], _ -> failwith "excess elements"
             | (_, memty) :: _, (design, init) :: xs ->
                 let memty, design =
                   match design with
@@ -783,14 +782,14 @@ and type_init is_unsafe env ty init =
                   match (mems, x) with
                   | mems, 0 -> mems
                   | [], _ ->
-                      failwith "type_init is_unsafe env error: excess elements"
+                      failwith "excess elements"
                   | _ :: mems, x -> remain_mems mems (x - 1)
                 in
                 (design, type_init is_unsafe env memty init)
                 :: aux loc (remain_mems mems !loc) xs
           in
           IVect (aux loc mems l)
-      | _ -> failwith "type_init is_unsafe env: invalid type or initializer")
+      | _ -> failwith "tinvalid type or initializer")
 
 and type_design is_unsafe env ty design loc =
   match (ty, design) with
@@ -801,11 +800,11 @@ and type_design is_unsafe env ty design loc =
       let mems =
         match List.nth (List.rev !Env.program) id with
         | StructDef (_, _, mems) -> mems
-        | _ -> failwith "type_init is_unsafe env"
+        | _ -> failwith "internal error"
       in
       let ty =
         try List.assoc name mems
-        with _ -> failwith "type_design is_unsafe env"
+        with _ -> failwith "cannot find the menber"
       in
       let l = List.init (List.length mems) (fun x -> x) in
       let l = List.map2 (fun (name, _) loc -> (name, loc)) mems l in
@@ -814,9 +813,7 @@ and type_design is_unsafe env ty design loc =
       (ty, DField (name, design))
   | ty, Dnone -> (type_conv ty, Dnone)
   | _ ->
-      failwith
-        ("type_design is_unsafe env" ^ Syntax.show_ty_ ty
-       ^ Syntax.show_desig design)
+      failwith "wrong designator"
 
 let check_droped_params params =
   let open Syntax in

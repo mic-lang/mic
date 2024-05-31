@@ -3,6 +3,7 @@
 #include "include/stdlib.h"
 #include "include/stdbool.h"
 #include "include/string.h"
+#include "include/stddef.h"
 
 lifetime <depth p>
 void test_heap(void p dyn* p_out) using q {
@@ -18,8 +19,8 @@ int main() {
     test_heap<p>(mi_heap_malloc<p>(p, 32));
   }
   mi_collect(true);
-  //mi_stats_print(null);
-  mi_printf<static, static>("hello, world!\n");
+  mi_stats_print(NULL);
+  //mi_printf<static, static>("hello, world!\n");
 
   return 0;
 }

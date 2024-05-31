@@ -133,8 +133,10 @@ let make_structdef name lparams decl =
       TsStructDef id
   | _ -> (
       match lookup_structdef name (get_scope ()) with
-      | Some _ -> failwith "redifinition of struct"
-      | None -> TsStructDef (push_def (StructDef (name, lparams, decl))))
+      | Some (Stack id) ->
+          update_program id (StructDef (name, lparams, decl));
+          TsStructDef id
+      | _ -> TsStructDef (push_def (StructDef (name, lparams, decl))))
 
 let make_uniondef name lparams decl =
   match lookup_uniondecl name (get_scope ()) with
@@ -143,8 +145,10 @@ let make_uniondef name lparams decl =
       TsUnionDef id
   | _ -> (
       match lookup_uniondef name (get_scope ()) with
-      | Some _ -> failwith "redifinition of struct"
-      | None -> TsUnionDef (push_def (UnionDef (name, lparams, decl))))
+      | Some (Stack id) ->
+          update_program id (UnionDef (name, lparams, decl));
+          TsUnionDef id
+      | _ -> TsUnionDef (push_def (UnionDef (name, lparams, decl))))
 
 let is_decl name = function
   | Param ((n, _), _, _)
@@ -271,10 +275,10 @@ let lookup_id_kind name =
         | Lparam x, Lparam y -> -compare x y)
       dic
   with
-  | [] -> failwith ("not found: " ^ name)
+  | [] -> failwith ("name not found: " ^ name)
   | x :: _ -> x
 
 let lookup_var name =
   match lookup_id_kind name with
   | Stack id, IdUsual | Stack id, IdLifetime -> id
-  | _ -> failwith "lookup_var"
+  | _ -> failwith ("var not found: " ^ name)

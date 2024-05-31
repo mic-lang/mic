@@ -278,5 +278,4 @@ and gen_item_global = function
       "\n" ^ gen_decl 0 name ty ^ " " ^ gen_stmt 0 stmt ^ "\n"
   | _ -> ""
 
-let gen_program program =
-  String.concat "" (List.map gen_item_global program)
+let gen_program program = String.concat "" (List.map gen_item_global program)
