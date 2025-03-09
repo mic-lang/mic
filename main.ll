@@ -5,8 +5,6 @@ target triple = "x86_64-unknown-linux-gnu"
 
 $test_heap = comdat any
 
-$mic_heap_new = comdat any
-
 ; Function Attrs: noinline nounwind optnone uwtable
 define weak_odr dso_local void @test_heap(ptr noundef %p_out) #0 comdat {
 entry:
@@ -33,7 +31,7 @@ entry:
 }
 
 ; Function Attrs: noinline nounwind optnone uwtable
-define linkonce_odr dso_local ptr @mic_heap_new() #0 comdat {
+define internal ptr @mic_heap_new() #0 {
 entry:
   %call = call ptr @mi_heap_new()
   ret ptr %call

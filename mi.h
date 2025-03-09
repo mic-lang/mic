@@ -7,7 +7,7 @@ typedef const __region_t region;
 constexpr region _static = 0;
 
 lifetime <region p>
-mi_heap_t mi(p)* mic_heap_new(void) {
+static inline mi_heap_t mi(p)* mic_heap_new(void) {
     return (mi_heap_t mi(p)*)mi_heap_new();
 }
 
@@ -18,7 +18,7 @@ static inline void       mic_heap_delete(mi_heap_t mi(p)* heap) {
 }
 
 lifetime <region p>
-static  void       mic_heap_destroy(mi_heap_t mi(p)* heap) {
+static inline void       mic_heap_destroy(mi_heap_t mi(p)* heap) {
     mi_heap_destroy((mi_heap_t*)heap);
     return;
 }

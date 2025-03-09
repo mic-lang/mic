@@ -9,7 +9,9 @@ void test_heap(void mi(p)* p_out) {
   //mic_free<p>(p_out);
   mic_free<q>(p1); mic_free<q>(p2);
 }
+
 lifetime void test_heap(void mi(0)* p_out);
+
 int main() {
   
   {

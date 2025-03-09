@@ -1,13 +1,13 @@
 # The Mic clang repo
 
 This repo contains a patch of the LLVM/Clang toolchain that has been modified to support  Mic. 
-Mic extends C with region based memory management using mimmaloc.
+Mic extends C with region based memory management using mimalloc.
 The Mic documentation is available at the
 [The Mic book](https://mic-lang.github.io/).
 
 ## Trying out Mic
 
-You can install the Mic compiler with the foolowing steps.
+You can install the Mic compiler with the following steps.
 
 ```
 git clone https://github.com/llvm/llvm-project 
