@@ -156,10 +156,18 @@ index 47b21bc9f63f..e078da46932d 100644
    AutoVarEmission emission(D);
  
 diff --git a/clang/lib/CodeGen/CodeGenModule.cpp b/clang/lib/CodeGen/CodeGenModule.cpp
-index c49f76314882..099d2f4874af 100644
+index c49f76314882..2f1aaa796659 100644
 --- a/clang/lib/CodeGen/CodeGenModule.cpp
 +++ b/clang/lib/CodeGen/CodeGenModule.cpp
-@@ -3924,7 +3924,8 @@ void CodeGenModule::EmitGlobal(GlobalDecl GD) {
+@@ -73,6 +73,7 @@
+ #include "llvm/TargetParser/X86TargetParser.h"
+ #include "llvm/Transforms/Utils/BuildLibCalls.h"
+ #include <optional>
++#include <set>
+ 
+ using namespace clang;
+ using namespace CodeGen;
+@@ -3924,7 +3925,8 @@ void CodeGenModule::EmitGlobal(GlobalDecl GD) {
    // Defer code generation to first use when possible, e.g. if this is an inline
    // function. If the global must always be emitted, do it eagerly if possible
    // to benefit from cache locality.
@@ -169,7 +177,12 @@ index c49f76314882..099d2f4874af 100644
      // Emit the definition if it can't be deferred.
      EmitGlobalDefinition(GD);
      addEmittedDeferredDecl(GD);
-@@ -6961,7 +6962,7 @@ void CodeGenModule::EmitDeclContext(const DeclContext *DC) {
+@@ -6957,11 +6959,11 @@ void CodeGenModule::EmitDeclContext(const DeclContext *DC) {
+     EmitTopLevelDecl(I);
+   }
+ }
+-
++std::set<const IdentifierInfo*> FnNames;
  /// EmitTopLevelDecl - Emit code for a single top level declaration.
  void CodeGenModule::EmitTopLevelDecl(Decl *D) {
    // Ignore dependent declarations.
@@ -178,16 +191,22 @@ index c49f76314882..099d2f4874af 100644
      return;
  
    // Consteval function shouldn't be emitted.
-@@ -6972,6 +6973,8 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
+@@ -6972,6 +6974,14 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
    case Decl::CXXConversion:
    case Decl::CXXMethod:
    case Decl::Function:
-+    if (getLangOpts().Mic && cast<FunctionDecl>(D)->isFunctionTemplateSpecialization())
-+      break;
++    if (getLangOpts().Mic) {
++      const IdentifierInfo* I = cast<FunctionDecl>(D)->getIdentifier();
++      std::set<const clang::IdentifierInfo*>::iterator It = FnNames.find(I);
++      if (It != FnNames.end()) {
++        break;  
++      } 
++      FnNames.insert(I);
++    }
      EmitGlobal(cast<FunctionDecl>(D));
      // Always provide some coverage mapping
      // even for the functions that aren't emitted.
-@@ -7010,6 +7013,8 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
+@@ -7010,6 +7020,8 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
          DI->completeTemplateDefinition(*Spec);
    } [[fallthrough]];
    case Decl::CXXRecord: {
@@ -196,7 +215,7 @@ index c49f76314882..099d2f4874af 100644
      CXXRecordDecl *CRD = cast<CXXRecordDecl>(D);
      if (CGDebugInfo *DI = getModuleDebugInfo()) {
        if (CRD->hasDefinition())
-@@ -7026,11 +7031,24 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
+@@ -7026,11 +7038,24 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
    }
      // No code generation needed.
    case Decl::UsingShadow:
@@ -212,16 +231,16 @@ index c49f76314882..099d2f4874af 100644
    case Decl::VarTemplatePartialSpecialization:
 +    break;
    case Decl::FunctionTemplate:
-+    if (getLangOpts().Mic)
++    /*if (getLangOpts().Mic)
 +      EmitGlobal(cast<FunctionTemplateDecl>(D)->getTemplatedDecl());
 +    // Always provide some coverage mapping
 +    // even for the functions that aren't emitted.
-+    AddDeferredUnusedCoverageMapping(D);
++    AddDeferredUnusedCoverageMapping(D);*/
 +    break;
    case Decl::TypeAliasTemplate:
    case Decl::Block:
    case Decl::Empty:
-@@ -7237,6 +7255,8 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
+@@ -7237,6 +7262,8 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
      break;
  
    case Decl::Record:
@@ -337,9 +356,18 @@ index 33a90e0cb8a4..65225866fa1c 100644
        // identifier and return.
        Result.setIdentifier(Id, IdLoc);
 diff --git a/clang/lib/Parse/ParseTemplate.cpp b/clang/lib/Parse/ParseTemplate.cpp
-index b2cb3d71e09f..9f088a9baf48 100644
+index b2cb3d71e09f..d795171c5de5 100644
 --- a/clang/lib/Parse/ParseTemplate.cpp
 +++ b/clang/lib/Parse/ParseTemplate.cpp
+@@ -42,7 +42,7 @@ Parser::ParseDeclarationStartingWithTemplate(DeclaratorContext Context,
+                                              ParsedAttributes &AccessAttrs) {
+   ObjCDeclContextSwitch ObjCDC(*this);
+ 
+-  if (Tok.is(tok::kw_template) && NextToken().isNot(tok::less)) {
++  if (Tok.isOneOf(tok::kw_template, tok::kw_lifetime) && NextToken().isNot(tok::less)) {
+     return ParseExplicitInstantiation(Context, SourceLocation(), ConsumeToken(),
+                                       DeclEnd, AccessAttrs,
+                                       AccessSpecifier::AS_none);
 @@ -78,7 +78,7 @@ Parser::ParseDeclarationStartingWithTemplate(DeclaratorContext Context,
  Parser::DeclGroupPtrTy Parser::ParseTemplateDeclarationOrSpecialization(
      DeclaratorContext Context, SourceLocation &DeclEnd,
@@ -460,6 +488,28 @@ index d6517511d7db..a13f5f946151 100644
  
    // Initialize predefined Objective-C types:
    if (getLangOpts().ObjC) {
+diff --git a/clang/lib/Sema/SemaCast.cpp b/clang/lib/Sema/SemaCast.cpp
+index f98857f852b5..a9468e6713b6 100644
+--- a/clang/lib/Sema/SemaCast.cpp
++++ b/clang/lib/Sema/SemaCast.cpp
+@@ -2725,7 +2725,7 @@ bool Sema::CheckAltivecInitFromScalar(SourceRange R, QualType VecTy,
+ 
+ void CastOperation::CheckCXXCStyleCast(bool FunctionalStyle,
+                                        bool ListInitialization) {
+-  assert(Self.getLangOpts().CPlusPlus);
++  assert(Self.getLangOpts().CPlusPlus || Self.getLangOpts().Mic);
+ 
+   // Handle placeholders.
+   if (isPlaceholder()) {
+@@ -3356,7 +3356,7 @@ ExprResult Sema::BuildCStyleCastExpr(SourceLocation LPLoc,
+   Op.DestRange = CastTypeInfo->getTypeLoc().getSourceRange();
+   Op.OpRange = SourceRange(LPLoc, CastExpr->getEndLoc());
+ 
+-  if (getLangOpts().CPlusPlus) {
++  if (getLangOpts().CPlusPlus || getLangOpts().Mic) {
+     Op.CheckCXXCStyleCast(/*FunctionalCast=*/ false,
+                           isa<InitListExpr>(CastExpr));
+   } else {
 diff --git a/clang/lib/Sema/SemaDecl.cpp b/clang/lib/Sema/SemaDecl.cpp
 index 4001c4d263f1..d7923d2ed0b4 100644
 --- a/clang/lib/Sema/SemaDecl.cpp
@@ -603,6 +653,19 @@ index 4001c4d263f1..d7923d2ed0b4 100644
      FieldCollector->FinishClass();
      if (RD->hasAttr<SYCLSpecialClassAttr>()) {
        auto *Def = RD->getDefinition();
+diff --git a/clang/lib/Sema/SemaExpr.cpp b/clang/lib/Sema/SemaExpr.cpp
+index 562c98c6babe..3a3cb1fd41ea 100644
+--- a/clang/lib/Sema/SemaExpr.cpp
++++ b/clang/lib/Sema/SemaExpr.cpp
+@@ -16912,6 +16912,8 @@ bool Sema::DiagnoseAssignmentResult(AssignConvertType ConvTy,
+     Qualifiers lhq = SrcType->getPointeeType().getQualifiers();
+     Qualifiers rhq = DstType->getPointeeType().getQualifiers();
+     if (lhq.getAddressSpace() != rhq.getAddressSpace()) {
++      if (getLangOpts().Mic)
++        return false;
+       DiagKind = diag::err_typecheck_incompatible_address_space;
+       break;
+     } else if (lhq.getObjCLifetime() != rhq.getObjCLifetime()) {
 diff --git a/clang/lib/Sema/SemaTemplate.cpp b/clang/lib/Sema/SemaTemplate.cpp
 index 5e7a3c8484c8..7a56d88c1eb0 100644
 --- a/clang/lib/Sema/SemaTemplate.cpp
@@ -638,5 +701,4 @@ index 83464c50b4b2..41bed3a29abe 100644
      S.Diag(Attr.getLoc(), diag::err_attribute_address_function_type);
      Attr.setInvalid();
      return;
-
  
