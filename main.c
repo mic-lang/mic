@@ -6,7 +6,7 @@ void test_heap(void mi(p)* p_out) {
   mi_heap_t mi(q)* heap = mic_heap_new<q>();
   void mi(q)* p1 = mic_heap_malloc<q>(heap,32);
   void mi(q)* p2 = mic_heap_malloc<q>(heap,48);
-  //mic_free<p>(p_out);
+  mic_free<p>(p_out);
   mic_free<q>(p1); mic_free<q>(p2);
 }
 

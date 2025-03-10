@@ -23,10 +23,12 @@ entry:
   %1 = load ptr, ptr %heap, align 8
   %call2 = call ptr @mic_heap_malloc(ptr noundef %1, i64 noundef 48)
   store ptr %call2, ptr %p2, align 8
-  %2 = load ptr, ptr %p1, align 8
+  %2 = load ptr, ptr %p_out.addr, align 8
   call void @mic_free(ptr noundef %2)
-  %3 = load ptr, ptr %p2, align 8
+  %3 = load ptr, ptr %p1, align 8
   call void @mic_free(ptr noundef %3)
+  %4 = load ptr, ptr %p2, align 8
+  call void @mic_free(ptr noundef %4)
   ret void
 }
 

@@ -654,9 +654,18 @@ index 4001c4d263f1..d7923d2ed0b4 100644
      if (RD->hasAttr<SYCLSpecialClassAttr>()) {
        auto *Def = RD->getDefinition();
 diff --git a/clang/lib/Sema/SemaExpr.cpp b/clang/lib/Sema/SemaExpr.cpp
-index 562c98c6babe..3a3cb1fd41ea 100644
+index 562c98c6babe..e54127bf7285 100644
 --- a/clang/lib/Sema/SemaExpr.cpp
 +++ b/clang/lib/Sema/SemaExpr.cpp
+@@ -6490,7 +6490,7 @@ ExprResult Sema::BuildCallExpr(Scope *Scope, Expr *Fn, SourceLocation LParenLoc,
+     if (CheckInvalidBuiltinCountedByRef(Arg, FunctionArgKind))
+       return ExprError();
+ 
+-  if (getLangOpts().CPlusPlus) {
++  if (getLangOpts().CPlusPlus || getLangOpts().Mic) {
+     // If this is a pseudo-destructor expression, build the call immediately.
+     if (isa<CXXPseudoDestructorExpr>(Fn)) {
+       if (!ArgExprs.empty()) {
 @@ -16912,6 +16912,8 @@ bool Sema::DiagnoseAssignmentResult(AssignConvertType ConvTy,
      Qualifiers lhq = SrcType->getPointeeType().getQualifiers();
      Qualifiers rhq = DstType->getPointeeType().getQualifiers();
@@ -701,4 +710,5 @@ index 83464c50b4b2..41bed3a29abe 100644
      S.Diag(Attr.getLoc(), diag::err_attribute_address_function_type);
      Attr.setInvalid();
      return;
+
  
