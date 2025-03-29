@@ -12,8 +12,8 @@ You can install the Mic compiler with the following steps.
 ```
 git clone https://github.com/llvm/llvm-project 
 cd llvm-project
-git checkout 3026ecaff54b220409ecc254b4f6209801a251b9
-git apply mic.patch
+git checkout llvmorg-19.1.7
+git apply llvm-19.1.7.patch
 mkdir build
 cd build
 cmake -DLLVM_ENABLE_PROJECTS=clang -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" ../llvm

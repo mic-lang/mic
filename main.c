@@ -1,4 +1,4 @@
-#include "mi.h"
+#include "mic.h"
 
 lifetime <region p>
 void test_heap(void mi(p)* p_out) {
