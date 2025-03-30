@@ -1,4 +1,4 @@
-# The Mic clang repo
+# The Mic patch repo
 
 This repo contains a patch of the LLVM/Clang toolchain that has been modified to support  Mic. 
 Mic extends C with region based memory management using mimalloc.
@@ -13,7 +13,7 @@ You can install the Mic compiler with the following steps.
 git clone https://github.com/llvm/llvm-project 
 cd llvm-project
 git checkout llvmorg-19.1.7
-git apply llvm-19.1.7.patch
+git apply --directory=clang llvm-19.1.7.patch
 mkdir build
 cd build
 cmake -DLLVM_ENABLE_PROJECTS=clang -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" ../llvm
