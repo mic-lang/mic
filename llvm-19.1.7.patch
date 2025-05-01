@@ -1,318 +1,318 @@
 diff --git a/clang/include/clang/AST/ASTContext.h b/clang/include/clang/AST/ASTContext.h
-index cd1ce1d7cbc2..16a19645d7f3 100644
+index 16a19645d7f3..cd1ce1d7cbc2 100644
 --- a/clang/include/clang/AST/ASTContext.h
 +++ b/clang/include/clang/AST/ASTContext.h
-@@ -355,9 +355,6 @@ class ASTContext : public RefCountedBase<ASTContext> {
+@@ -355,6 +355,9 @@ class ASTContext : public RefCountedBase<ASTContext> {
  
    /// The typedef for the __uint128_t type.
    mutable TypedefDecl *UInt128Decl = nullptr;
--  
--  /// The typedef for the __region_t type.
--  mutable TypedefDecl *RegionDecl = nullptr;
++  
++  /// The typedef for the __region_t type.
++  mutable TypedefDecl *RegionDecl = nullptr;
  
    /// The typedef for the target specific predefined
    /// __builtin_va_list type.
-@@ -1262,9 +1259,6 @@ public:
+@@ -1259,6 +1262,9 @@ public:
    /// Retrieve the declaration for the 128-bit unsigned integer type.
    TypedefDecl *getUInt128Decl() const;
  
--  /// Retrieve the declaration for the region type.
--  TypedefDecl *getRegionDecl() const;
--
++  /// Retrieve the declaration for the region type.
++  TypedefDecl *getRegionDecl() const;
++
    //===--------------------------------------------------------------------===//
    //                           Type Constructors
    //===--------------------------------------------------------------------===//
 diff --git a/clang/include/clang/Basic/LangOptions.def b/clang/include/clang/Basic/LangOptions.def
-index bca04abb9720..834a6f6cd43e 100644
+index 834a6f6cd43e..bca04abb9720 100644
 --- a/clang/include/clang/Basic/LangOptions.def
 +++ b/clang/include/clang/Basic/LangOptions.def
-@@ -101,7 +101,6 @@ LANGOPT(CPlusPlus20       , 1, 0, "C++20")
+@@ -101,6 +101,7 @@ LANGOPT(CPlusPlus20       , 1, 0, "C++20")
  LANGOPT(CPlusPlus23       , 1, 0, "C++23")
  LANGOPT(CPlusPlus26       , 1, 0, "C++26")
  LANGOPT(ObjC              , 1, 0, "Objective-C")
--LANGOPT(Mic               , 1, 0, "Mic")
++LANGOPT(Mic               , 1, 0, "Mic")
  BENIGN_LANGOPT(ObjCDefaultSynthProperties , 1, 0,
                 "Objective-C auto-synthesized properties")
  BENIGN_LANGOPT(EncodeExtendedBlockSig , 1, 0,
 diff --git a/clang/include/clang/Basic/LangStandard.h b/clang/include/clang/Basic/LangStandard.h
-index b166e285c7c8..56a0d2c95e2b 100644
+index 56a0d2c95e2b..b166e285c7c8 100644
 --- a/clang/include/clang/Basic/LangStandard.h
 +++ b/clang/include/clang/Basic/LangStandard.h
-@@ -64,8 +64,7 @@ enum LangFeatures {
+@@ -64,7 +64,8 @@ enum LangFeatures {
    GNUMode = (1 << 14),
    HexFloat = (1 << 15),
    OpenCL = (1 << 16),
--  HLSL = (1 << 17),
--  Mic = (1 << 18)
-+  HLSL = (1 << 17)
+-  HLSL = (1 << 17)
++  HLSL = (1 << 17),
++  Mic = (1 << 18)
  };
  
  /// LangStandard - Information about the properties of a particular language
-@@ -149,10 +148,7 @@ public:
+@@ -148,7 +149,10 @@ public:
    bool hasHexFloats() const { return Flags & HexFloat; }
  
    /// isOpenCL - Language is a OpenCL variant.
--  bool isOpenCL() const { return Flags & OpenCL; } 
--  
--  /// isMic - Language is a superset of Mic.
--  bool isMic() const { return Flags & Mic; }
-+  bool isOpenCL() const { return Flags & OpenCL; }
+-  bool isOpenCL() const { return Flags & OpenCL; }
++  bool isOpenCL() const { return Flags & OpenCL; } 
++  
++  /// isMic - Language is a superset of Mic.
++  bool isMic() const { return Flags & Mic; }
  
    static Kind getLangKind(StringRef Name);
    static Kind getHLSLLangKind(StringRef Name);
 diff --git a/clang/include/clang/Basic/LangStandards.def b/clang/include/clang/Basic/LangStandards.def
-index 01e7e8f8fdc4..f0c259307ac4 100644
+index f0c259307ac4..01e7e8f8fdc4 100644
 --- a/clang/include/clang/Basic/LangStandards.def
 +++ b/clang/include/clang/Basic/LangStandards.def
-@@ -107,9 +107,6 @@ LANGSTANDARD(gnu2y, "gnu2y",
+@@ -107,6 +107,9 @@ LANGSTANDARD(gnu2y, "gnu2y",
               C, "Working Draft for ISO C2y with GNU extensions",
               LineComment | C99 | C11 | C17 | C23 | C2y | Digraphs | GNUMode | HexFloat)
  
--LANGSTANDARD(mic, "mic",
--             C, "Mic dialects",
--             LineComment | C99 | C11 | C17 | C23 | Mic | Digraphs | HexFloat)
++LANGSTANDARD(mic, "mic",
++             C, "Mic dialects",
++             LineComment | C99 | C11 | C17 | C23 | Mic | Digraphs | HexFloat)
  
  // C++ modes
  LANGSTANDARD(cxx98, "c++98",
 diff --git a/clang/include/clang/Basic/TokenKinds.def b/clang/include/clang/Basic/TokenKinds.def
-index fc10b4e1778c..0526fbf51bd9 100644
+index 0526fbf51bd9..fc10b4e1778c 100644
 --- a/clang/include/clang/Basic/TokenKinds.def
 +++ b/clang/include/clang/Basic/TokenKinds.def
-@@ -383,7 +383,6 @@ KEYWORD(typeid                      , KEYCXX)
+@@ -383,6 +383,7 @@ KEYWORD(typeid                      , KEYCXX)
  KEYWORD(using                       , KEYCXX)
  KEYWORD(virtual                     , KEYCXX)
  KEYWORD(wchar_t                     , WCHARSUPPORT)
--KEYWORD(lifetime                    , KEYMIC)
++KEYWORD(lifetime                    , KEYMIC)
  
  // C++ 2.5p2: Alternative Representations.
  CXX_KEYWORD_OPERATOR(and     , ampamp)
 diff --git a/clang/lib/AST/ASTContext.cpp b/clang/lib/AST/ASTContext.cpp
-index 43370467f4e7..1064507f3461 100644
+index 1064507f3461..43370467f4e7 100644
 --- a/clang/lib/AST/ASTContext.cpp
 +++ b/clang/lib/AST/ASTContext.cpp
-@@ -1208,12 +1208,6 @@ TypedefDecl *ASTContext::getUInt128Decl() const {
+@@ -1208,6 +1208,12 @@ TypedefDecl *ASTContext::getUInt128Decl() const {
    return UInt128Decl;
  }
  
--TypedefDecl *ASTContext::getRegionDecl() const {
--  if (!RegionDecl)
--    RegionDecl = buildImplicitTypedef(UnsignedIntTy, "__region_t");
--  return RegionDecl;
--}
--
++TypedefDecl *ASTContext::getRegionDecl() const {
++  if (!RegionDecl)
++    RegionDecl = buildImplicitTypedef(UnsignedIntTy, "__region_t");
++  return RegionDecl;
++}
++
  void ASTContext::InitBuiltinType(CanQualType &R, BuiltinType::Kind K) {
    auto *Ty = new (*this, alignof(BuiltinType)) BuiltinType(K);
    R = CanQualType::CreateUnsafe(QualType(Ty, 0));
 diff --git a/clang/lib/Basic/IdentifierTable.cpp b/clang/lib/Basic/IdentifierTable.cpp
-index 73ecffccafd6..4f7ccaf4021d 100644
+index 4f7ccaf4021d..73ecffccafd6 100644
 --- a/clang/lib/Basic/IdentifierTable.cpp
 +++ b/clang/lib/Basic/IdentifierTable.cpp
-@@ -108,8 +108,7 @@ namespace {
+@@ -108,7 +108,8 @@ namespace {
      KEYSYCL       = 0x800000,
      KEYCUDA       = 0x1000000,
      KEYHLSL       = 0x2000000,
--    KEYMIC        = 0x4000000,
--    KEYFIXEDPOINT = 0x8000000,
-+    KEYFIXEDPOINT = 0x4000000,
+-    KEYFIXEDPOINT = 0x4000000,
++    KEYMIC        = 0x4000000,
++    KEYFIXEDPOINT = 0x8000000,
      KEYMAX        = KEYFIXEDPOINT, // The maximum key
      KEYALLCXX = KEYCXX | KEYCXX11 | KEYCXX20,
      KEYALL = (KEYMAX | (KEYMAX-1)) & ~KEYNOMS18 &
-@@ -212,8 +211,6 @@ static KeywordStatus getKeywordStatusHelper(const LangOptions &LangOpts,
+@@ -211,6 +212,8 @@ static KeywordStatus getKeywordStatusHelper(const LangOptions &LangOpts,
    case KEYNOMS18:
      // The disable behavior for this is handled in getKeywordStatus.
      return KS_Unknown;
--  case KEYMIC:
--    return LangOpts.Mic ? KS_Enabled : KS_Unknown;
++  case KEYMIC:
++    return LangOpts.Mic ? KS_Enabled : KS_Unknown;
    case KEYFIXEDPOINT:
      return LangOpts.FixedPoint ? KS_Enabled : KS_Disabled;
    default:
 diff --git a/clang/lib/Basic/LangOptions.cpp b/clang/lib/Basic/LangOptions.cpp
-index 0aa8fdf16be3..e5adc034f60c 100644
+index e5adc034f60c..0aa8fdf16be3 100644
 --- a/clang/lib/Basic/LangOptions.cpp
 +++ b/clang/lib/Basic/LangOptions.cpp
-@@ -127,8 +127,6 @@ void LangOptions::setLangDefaults(LangOptions &Opts, Language Lang,
+@@ -127,6 +127,8 @@ void LangOptions::setLangDefaults(LangOptions &Opts, Language Lang,
    Opts.Digraphs = Std.hasDigraphs();
    Opts.RawStringLiterals = Std.hasRawStringLiterals();
  
--  Opts.Mic = Std.isMic();
--
++  Opts.Mic = Std.isMic();
++
    Opts.HLSL = Lang == Language::HLSL;
    if (Opts.HLSL && Opts.IncludeDefaultHeader)
      Includes.push_back("hlsl.h");
 diff --git a/clang/lib/CodeGen/CGDecl.cpp b/clang/lib/CodeGen/CGDecl.cpp
-index 5f69625ee8f3..c3251bb5ab56 100644
+index c3251bb5ab56..5f69625ee8f3 100644
 --- a/clang/lib/CodeGen/CGDecl.cpp
 +++ b/clang/lib/CodeGen/CGDecl.cpp
 @@ -1443,9 +1443,9 @@ void CodeGenFunction::EmitAndRegisterVariableArrayDimensions(
  CodeGenFunction::AutoVarEmission
  CodeGenFunction::EmitAutoVarAlloca(const VarDecl &D) {
    QualType Ty = D.getType();
--  assert(getLangOpts().Mic || (
-+  assert(
+-  assert(
++  assert(getLangOpts().Mic || (
        Ty.getAddressSpace() == LangAS::Default ||
--      (Ty.getAddressSpace() == LangAS::opencl_private && getLangOpts().OpenCL)));
-+      (Ty.getAddressSpace() == LangAS::opencl_private && getLangOpts().OpenCL));
+-      (Ty.getAddressSpace() == LangAS::opencl_private && getLangOpts().OpenCL));
++      (Ty.getAddressSpace() == LangAS::opencl_private && getLangOpts().OpenCL)));
  
    AutoVarEmission emission(D);
  
 diff --git a/clang/lib/CodeGen/CodeGenModule.cpp b/clang/lib/CodeGen/CodeGenModule.cpp
-index b37700da6e96..2a5d5f9083ae 100644
+index 2a5d5f9083ae..b37700da6e96 100644
 --- a/clang/lib/CodeGen/CodeGenModule.cpp
 +++ b/clang/lib/CodeGen/CodeGenModule.cpp
-@@ -76,7 +76,6 @@
+@@ -76,6 +76,7 @@
  #include "llvm/TargetParser/X86TargetParser.h"
  #include "llvm/Transforms/Utils/BuildLibCalls.h"
  #include <optional>
--#include <set>
++#include <set>
  
  using namespace clang;
  using namespace CodeGen;
-@@ -3861,8 +3860,7 @@ void CodeGenModule::EmitGlobal(GlobalDecl GD) {
+@@ -3860,7 +3861,8 @@ void CodeGenModule::EmitGlobal(GlobalDecl GD) {
    // Defer code generation to first use when possible, e.g. if this is an inline
    // function. If the global must always be emitted, do it eagerly if possible
    // to benefit from cache locality.
--  if ((MustBeEmitted(Global) && MayBeEmittedEagerly(Global)) || 
--      (getLangOpts().Mic && Global->getDescribedTemplate())) {
-+  if (MustBeEmitted(Global) && MayBeEmittedEagerly(Global)) {
+-  if (MustBeEmitted(Global) && MayBeEmittedEagerly(Global)) {
++  if ((MustBeEmitted(Global) && MayBeEmittedEagerly(Global)) || 
++      (getLangOpts().Mic && Global->getDescribedTemplate())) {
      // Emit the definition if it can't be deferred.
      EmitGlobalDefinition(GD);
      addEmittedDeferredDecl(GD);
-@@ -6870,11 +6868,10 @@ void CodeGenModule::EmitDeclContext(const DeclContext *DC) {
+@@ -6868,10 +6870,11 @@ void CodeGenModule::EmitDeclContext(const DeclContext *DC) {
    }
  }
  
--std::set<const IdentifierInfo*> FnNames;
++std::set<const IdentifierInfo*> FnNames;
  /// EmitTopLevelDecl - Emit code for a single top level declaration.
  void CodeGenModule::EmitTopLevelDecl(Decl *D) {
    // Ignore dependent declarations.
--  if (!getLangOpts().Mic && D->isTemplated())
-+  if (D->isTemplated())
+-  if (D->isTemplated())
++  if (!getLangOpts().Mic && D->isTemplated())
      return;
  
    // Consteval function shouldn't be emitted.
-@@ -6885,14 +6882,6 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
+@@ -6882,6 +6885,14 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
    case Decl::CXXConversion:
    case Decl::CXXMethod:
    case Decl::Function:
--    if (getLangOpts().Mic) {
--      const IdentifierInfo* I = cast<FunctionDecl>(D)->getIdentifier();
--      std::set<const clang::IdentifierInfo*>::iterator It = FnNames.find(I);
--      if (It != FnNames.end()) {
--        break;  
--      } 
--      FnNames.insert(I);
--    }
++    if (getLangOpts().Mic) {
++      const IdentifierInfo* I = cast<FunctionDecl>(D)->getIdentifier();
++      std::set<const clang::IdentifierInfo*>::iterator It = FnNames.find(I);
++      if (It != FnNames.end()) {
++        break;  
++      } 
++      FnNames.insert(I);
++    }
      EmitGlobal(cast<FunctionDecl>(D));
      // Always provide some coverage mapping
      // even for the functions that aren't emitted.
-@@ -6931,8 +6920,6 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
+@@ -6920,6 +6931,8 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
          DI->completeTemplateDefinition(*Spec);
    } [[fallthrough]];
    case Decl::CXXRecord: {
--    if (getLangOpts().Mic)
--      break;
++    if (getLangOpts().Mic)
++      break;
      CXXRecordDecl *CRD = cast<CXXRecordDecl>(D);
      if (CGDebugInfo *DI = getModuleDebugInfo()) {
        if (CRD->hasDefinition())
-@@ -6949,13 +6936,7 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
+@@ -6936,7 +6949,13 @@ void CodeGenModule::EmitTopLevelDecl(Decl *D) {
    }
      // No code generation needed.
    case Decl::UsingShadow:
--    break;
++    break;
    case Decl::ClassTemplate:
--    if (getLangOpts().Mic)
--    if (CGDebugInfo *DI = getModuleDebugInfo())
--    if (cast<RecordDecl>(cast<ClassTemplateDecl>(D)->getTemplatedDecl())->getDefinition())
--      DI->EmitAndRetainType(getContext().getRecordType(cast<RecordDecl>(cast<ClassTemplateDecl>(D)->getTemplatedDecl())));
--      break;
++    if (getLangOpts().Mic)
++    if (CGDebugInfo *DI = getModuleDebugInfo())
++    if (cast<RecordDecl>(cast<ClassTemplateDecl>(D)->getTemplatedDecl())->getDefinition())
++      DI->EmitAndRetainType(getContext().getRecordType(cast<RecordDecl>(cast<ClassTemplateDecl>(D)->getTemplatedDecl())));
++      break;
    case Decl::VarTemplate:
    case Decl::Concept:
    case Decl::VarTemplatePartialSpecialization:
 diff --git a/clang/lib/CodeGen/CodeGenTypes.cpp b/clang/lib/CodeGen/CodeGenTypes.cpp
-index cc05f80f9b81..f5deccdc1ba7 100644
+index f5deccdc1ba7..cc05f80f9b81 100644
 --- a/clang/lib/CodeGen/CodeGenTypes.cpp
 +++ b/clang/lib/CodeGen/CodeGenTypes.cpp
-@@ -623,10 +623,7 @@ llvm::Type *CodeGenTypes::ConvertType(QualType T) {
+@@ -623,7 +623,10 @@ llvm::Type *CodeGenTypes::ConvertType(QualType T) {
      const PointerType *PTy = cast<PointerType>(Ty);
      QualType ETy = PTy->getPointeeType();
      unsigned AS = getTargetAddressSpace(ETy);
--    if (Context.getLangOpts().Mic)
--      ResultType = llvm::PointerType::get(getLLVMContext(), 0);
--    else
--      ResultType = llvm::PointerType::get(getLLVMContext(), AS);
-+    ResultType = llvm::PointerType::get(getLLVMContext(), AS);
+-    ResultType = llvm::PointerType::get(getLLVMContext(), AS);
++    if (Context.getLangOpts().Mic)
++      ResultType = llvm::PointerType::get(getLLVMContext(), 0);
++    else
++      ResultType = llvm::PointerType::get(getLLVMContext(), AS);
      break;
    }
  
 diff --git a/clang/lib/Parse/ParseDecl.cpp b/clang/lib/Parse/ParseDecl.cpp
-index 3a86c6eeaf55..7ce9a9cea1c7 100644
+index 7ce9a9cea1c7..3a86c6eeaf55 100644
 --- a/clang/lib/Parse/ParseDecl.cpp
 +++ b/clang/lib/Parse/ParseDecl.cpp
-@@ -2019,7 +2019,6 @@ Parser::DeclGroupPtrTy Parser::ParseDeclaration(DeclaratorContext Context,
+@@ -2019,6 +2019,7 @@ Parser::DeclGroupPtrTy Parser::ParseDeclaration(DeclaratorContext Context,
    Decl *SingleDecl = nullptr;
    switch (Tok.getKind()) {
    case tok::kw_template:
--  case tok::kw_lifetime:
++  case tok::kw_lifetime:
    case tok::kw_export:
      ProhibitAttributes(DeclAttrs);
      ProhibitAttributes(DeclSpecAttrs);
-@@ -3998,7 +3997,7 @@ void Parser::ParseDeclarationSpecifiers(
+@@ -3997,7 +3998,7 @@ void Parser::ParseDeclarationSpecifiers(
  
        // In C++, check to see if this is a scope specifier like foo::bar::, if
        // so handle it as such.  This is important for ctor parsing.
--      if (getLangOpts().CPlusPlus || getLangOpts().Mic) {
-+      if (getLangOpts().CPlusPlus) {
+-      if (getLangOpts().CPlusPlus) {
++      if (getLangOpts().CPlusPlus || getLangOpts().Mic) {
          // C++20 [temp.spec] 13.9/6.
          // This disables the access checking rules for function template
          // explicit instantiation and explicit specialization:
 diff --git a/clang/lib/Parse/ParseDeclCXX.cpp b/clang/lib/Parse/ParseDeclCXX.cpp
-index 03911650a2f3..ce827c689beb 100644
+index ce827c689beb..03911650a2f3 100644
 --- a/clang/lib/Parse/ParseDeclCXX.cpp
 +++ b/clang/lib/Parse/ParseDeclCXX.cpp
 @@ -1863,7 +1863,7 @@ void Parser::ParseClassSpecifier(tok::TokenKind TagTokKind,
  
    // Parse the (optional) nested-name-specifier.
    CXXScopeSpec &SS = DS.getTypeSpecScope();
--  if (getLangOpts().CPlusPlus || getLangOpts().Mic) {
-+  if (getLangOpts().CPlusPlus) {
+-  if (getLangOpts().CPlusPlus) {
++  if (getLangOpts().CPlusPlus || getLangOpts().Mic) {
      // "FOO : BAR" is not a potential typo for "FOO::BAR".  In this context it
      // is a base-specifier-list.
      ColonProtectionRAIIObject X(*this);
-@@ -2313,10 +2313,7 @@ void Parser::ParseClassSpecifier(tok::TokenKind TagTokKind,
+@@ -2313,7 +2313,10 @@ void Parser::ParseClassSpecifier(tok::TokenKind TagTokKind,
                                    TagOrTempResult.get());
      else {
        Decl *D =
--                SkipBody.CheckSameAsPrevious ? SkipBody.New : 
--                (isa<TemplateDecl>(TagOrTempResult.get()) ? 
--                cast<TemplateDecl>(TagOrTempResult.get())->getTemplatedDecl() 
--                : TagOrTempResult.get());
-+          SkipBody.CheckSameAsPrevious ? SkipBody.New : TagOrTempResult.get();
+-          SkipBody.CheckSameAsPrevious ? SkipBody.New : TagOrTempResult.get();
++                SkipBody.CheckSameAsPrevious ? SkipBody.New : 
++                (isa<TemplateDecl>(TagOrTempResult.get()) ? 
++                cast<TemplateDecl>(TagOrTempResult.get())->getTemplatedDecl() 
++                : TagOrTempResult.get());
        // Parse the definition body.
        ParseStructUnionBody(StartLoc, TagType, cast<RecordDecl>(D));
        if (SkipBody.CheckSameAsPrevious &&
 diff --git a/clang/lib/Parse/ParseExpr.cpp b/clang/lib/Parse/ParseExpr.cpp
-index fce841cd04ab..e82b56527283 100644
+index e82b56527283..fce841cd04ab 100644
 --- a/clang/lib/Parse/ParseExpr.cpp
 +++ b/clang/lib/Parse/ParseExpr.cpp
 @@ -1191,7 +1191,7 @@ ExprResult Parser::ParseCastExpression(CastParseKind ParseKind,
                          // constant: enumeration-constant
      // Turn a potentially qualified name into a annot_typename or
      // annot_cxxscope if it would be valid.  This handles things like x::y, etc.
--    if (getLangOpts().CPlusPlus || getLangOpts().Mic) {
-+    if (getLangOpts().CPlusPlus) {
+-    if (getLangOpts().CPlusPlus) {
++    if (getLangOpts().CPlusPlus || getLangOpts().Mic) {
        // Avoid the unnecessary parse-time lookup in the common case
        // where the syntax forbids a type.
        Token Next = NextToken();
 diff --git a/clang/lib/Parse/ParseExprCXX.cpp b/clang/lib/Parse/ParseExprCXX.cpp
-index 6ee1489df501..1d364f77a814 100644
+index 1d364f77a814..6ee1489df501 100644
 --- a/clang/lib/Parse/ParseExprCXX.cpp
 +++ b/clang/lib/Parse/ParseExprCXX.cpp
 @@ -161,7 +161,7 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
      bool EnteringContext, bool *MayBePseudoDestructor, bool IsTypename,
      const IdentifierInfo **LastII, bool OnlyNamespace,
      bool InUsingDeclaration) {
--  assert((getLangOpts().CPlusPlus  || getLangOpts().Mic) &&
-+  assert(getLangOpts().CPlusPlus &&
+-  assert(getLangOpts().CPlusPlus &&
++  assert((getLangOpts().CPlusPlus  || getLangOpts().Mic) &&
           "Call sites of this function should be guarded by checking for C++");
  
    if (Tok.is(tok::annot_cxxscope)) {
@@ -320,8 +320,8 @@ index 6ee1489df501..1d364f77a814 100644
    // Handle 'A::template B'. This is for template-ids which have not
    // already been annotated by ParseOptionalCXXScopeSpecifier().
    bool TemplateSpecified = false;
--  if (Tok.is(tok::kw_template) || Tok.is(tok::kw_lifetime)) {
-+  if (Tok.is(tok::kw_template)) {
+-  if (Tok.is(tok::kw_template)) {
++  if (Tok.is(tok::kw_template) || Tok.is(tok::kw_lifetime)) {
      if (TemplateKWLoc && (ObjectType || SS.isSet())) {
        TemplateSpecified = true;
        *TemplateKWLoc = ConsumeToken();
@@ -329,21 +329,21 @@ index 6ee1489df501..1d364f77a814 100644
      IdentifierInfo *Id = Tok.getIdentifierInfo();
      SourceLocation IdLoc = ConsumeToken();
  
--    if (!getLangOpts().CPlusPlus && !getLangOpts().Mic) {
-+    if (!getLangOpts().CPlusPlus) {
+-    if (!getLangOpts().CPlusPlus) {
++    if (!getLangOpts().CPlusPlus && !getLangOpts().Mic) {
        // If we're not in C++, only identifiers matter. Record the
        // identifier and return.
        Result.setIdentifier(Id, IdLoc);
 diff --git a/clang/lib/Parse/ParseTemplate.cpp b/clang/lib/Parse/ParseTemplate.cpp
-index 3358e1ccc949..a5130f56600e 100644
+index a5130f56600e..3358e1ccc949 100644
 --- a/clang/lib/Parse/ParseTemplate.cpp
 +++ b/clang/lib/Parse/ParseTemplate.cpp
 @@ -42,7 +42,7 @@ Parser::ParseDeclarationStartingWithTemplate(DeclaratorContext Context,
                                               ParsedAttributes &AccessAttrs) {
    ObjCDeclContextSwitch ObjCDC(*this);
  
--  if (Tok.isOneOf(tok::kw_template, tok::kw_lifetime) && NextToken().isNot(tok::less)) {
-+  if (Tok.is(tok::kw_template) && NextToken().isNot(tok::less)) {
+-  if (Tok.is(tok::kw_template) && NextToken().isNot(tok::less)) {
++  if (Tok.isOneOf(tok::kw_template, tok::kw_lifetime) && NextToken().isNot(tok::less)) {
      return ParseExplicitInstantiation(Context, SourceLocation(), ConsumeToken(),
                                        DeclEnd, AccessAttrs,
                                        AccessSpecifier::AS_none);
@@ -351,131 +351,131 @@ index 3358e1ccc949..a5130f56600e 100644
  Parser::DeclGroupPtrTy Parser::ParseTemplateDeclarationOrSpecialization(
      DeclaratorContext Context, SourceLocation &DeclEnd,
      ParsedAttributes &AccessAttrs, AccessSpecifier AS) {
--  assert(Tok.isOneOf(tok::kw_export, tok::kw_template, tok::kw_lifetime) &&
-+  assert(Tok.isOneOf(tok::kw_export, tok::kw_template) &&
+-  assert(Tok.isOneOf(tok::kw_export, tok::kw_template) &&
++  assert(Tok.isOneOf(tok::kw_export, tok::kw_template, tok::kw_lifetime) &&
           "Token does not start a template declaration.");
  
    MultiParseScope TemplateParamScopes(*this);
-@@ -121,8 +121,7 @@ Parser::DeclGroupPtrTy Parser::ParseTemplateDeclarationOrSpecialization(
+@@ -121,7 +121,8 @@ Parser::DeclGroupPtrTy Parser::ParseTemplateDeclarationOrSpecialization(
  
      // Consume the 'template', which should be here.
      SourceLocation TemplateLoc;
--    if (!TryConsumeToken(tok::kw_template, TemplateLoc) &&
--    !TryConsumeToken(tok::kw_lifetime, TemplateLoc)) {
-+    if (!TryConsumeToken(tok::kw_template, TemplateLoc)) {
+-    if (!TryConsumeToken(tok::kw_template, TemplateLoc)) {
++    if (!TryConsumeToken(tok::kw_template, TemplateLoc) &&
++    !TryConsumeToken(tok::kw_lifetime, TemplateLoc)) {
        Diag(Tok.getLocation(), diag::err_expected_template);
        return nullptr;
      }
-@@ -162,7 +161,7 @@ Parser::DeclGroupPtrTy Parser::ParseTemplateDeclarationOrSpecialization(
+@@ -161,7 +162,7 @@ Parser::DeclGroupPtrTy Parser::ParseTemplateDeclarationOrSpecialization(
      ParamLists.push_back(Actions.ActOnTemplateParameterList(
          CurTemplateDepthTracker.getDepth(), ExportLoc, TemplateLoc, LAngleLoc,
          TemplateParams, RAngleLoc, OptionalRequiresClauseConstraintER.get()));
--  } while (Tok.isOneOf(tok::kw_export, tok::kw_template, tok::kw_lifetime));
-+  } while (Tok.isOneOf(tok::kw_export, tok::kw_template));
+-  } while (Tok.isOneOf(tok::kw_export, tok::kw_template));
++  } while (Tok.isOneOf(tok::kw_export, tok::kw_template, tok::kw_lifetime));
  
    ParsedTemplateInfo TemplateInfo(&ParamLists, isSpecialization,
                                    LastParamListWasEmpty);
-@@ -1251,7 +1250,7 @@ bool Parser::AnnotateTemplateIdToken(TemplateTy Template, TemplateNameKind TNK,
+@@ -1250,7 +1251,7 @@ bool Parser::AnnotateTemplateIdToken(TemplateTy Template, TemplateNameKind TNK,
                                       UnqualifiedId &TemplateName,
                                       bool AllowTypeAnnotation,
                                       bool TypeConstraint) {
--  assert((getLangOpts().CPlusPlus || getLangOpts().Mic) && "Can only annotate template-ids in C++");
-+  assert(getLangOpts().CPlusPlus && "Can only annotate template-ids in C++");
+-  assert(getLangOpts().CPlusPlus && "Can only annotate template-ids in C++");
++  assert((getLangOpts().CPlusPlus || getLangOpts().Mic) && "Can only annotate template-ids in C++");
    assert((Tok.is(tok::less) || TypeConstraint) &&
           "Parser isn't at the beginning of a template-id");
    assert(!(TypeConstraint && AllowTypeAnnotation) && "type-constraint can't be "
 diff --git a/clang/lib/Parse/Parser.cpp b/clang/lib/Parse/Parser.cpp
-index af9c4db45039..5ebe71e496a2 100644
+index 5ebe71e496a2..af9c4db45039 100644
 --- a/clang/lib/Parse/Parser.cpp
 +++ b/clang/lib/Parse/Parser.cpp
-@@ -982,7 +982,6 @@ Parser::ParseExternalDeclaration(ParsedAttributes &Attrs,
+@@ -982,6 +982,7 @@ Parser::ParseExternalDeclaration(ParsedAttributes &Attrs,
    case tok::kw_namespace:
    case tok::kw_typedef:
    case tok::kw_template:
--  case tok::kw_lifetime:
++  case tok::kw_lifetime:
    case tok::kw_static_assert:
    case tok::kw__Static_assert:
      // A function definition cannot start with any of these keywords.
-@@ -1786,7 +1785,7 @@ Parser::TryAnnotateName(CorrectionCandidateCallback *CCC,
+@@ -1785,7 +1786,7 @@ Parser::TryAnnotateName(CorrectionCandidateCallback *CCC,
    const bool WasScopeAnnotation = Tok.is(tok::annot_cxxscope);
  
    CXXScopeSpec SS;
--  if ((getLangOpts().CPlusPlus || getLangOpts().Mic) &&
-+  if (getLangOpts().CPlusPlus &&
+-  if (getLangOpts().CPlusPlus &&
++  if ((getLangOpts().CPlusPlus || getLangOpts().Mic) &&
        ParseOptionalCXXScopeSpecifier(SS, /*ObjectType=*/nullptr,
                                       /*ObjectHasErrors=*/false,
                                       EnteringContext))
-@@ -2033,7 +2032,7 @@ bool Parser::TryAnnotateTypeOrScopeToken(
+@@ -2032,7 +2033,7 @@ bool Parser::TryAnnotateTypeOrScopeToken(
      //            simple-template-id
      SourceLocation TypenameLoc = ConsumeToken();
      CXXScopeSpec SS;
--    if (getLangOpts().CPlusPlus && ParseOptionalCXXScopeSpecifier(SS, /*ObjectType=*/nullptr,
-+    if (ParseOptionalCXXScopeSpecifier(SS, /*ObjectType=*/nullptr,
+-    if (ParseOptionalCXXScopeSpecifier(SS, /*ObjectType=*/nullptr,
++    if (getLangOpts().CPlusPlus && ParseOptionalCXXScopeSpecifier(SS, /*ObjectType=*/nullptr,
                                         /*ObjectHasErrors=*/false,
                                         /*EnteringContext=*/false, nullptr,
                                         /*IsTypename*/ true))
-@@ -2062,7 +2061,7 @@ bool Parser::TryAnnotateTypeOrScopeToken(
+@@ -2061,7 +2062,7 @@ bool Parser::TryAnnotateTypeOrScopeToken(
      }
  
      bool TemplateKWPresent = false;
--    if (Tok.is(tok::kw_template) || Tok.is(tok::kw_lifetime)) {
-+    if (Tok.is(tok::kw_template)) {
+-    if (Tok.is(tok::kw_template)) {
++    if (Tok.is(tok::kw_template) || Tok.is(tok::kw_lifetime)) {
        ConsumeToken();
        TemplateKWPresent = true;
      }
-@@ -2114,7 +2113,7 @@ bool Parser::TryAnnotateTypeOrScopeToken(
+@@ -2113,7 +2114,7 @@ bool Parser::TryAnnotateTypeOrScopeToken(
    bool WasScopeAnnotation = Tok.is(tok::annot_cxxscope);
  
    CXXScopeSpec SS;
--  if (getLangOpts().CPlusPlus || getLangOpts().Mic)
-+  if (getLangOpts().CPlusPlus)
+-  if (getLangOpts().CPlusPlus)
++  if (getLangOpts().CPlusPlus || getLangOpts().Mic)
      if (ParseOptionalCXXScopeSpecifier(SS, /*ObjectType=*/nullptr,
                                         /*ObjectHasErrors=*/false,
                                         /*EnteringContext*/ false))
-@@ -2173,7 +2172,7 @@ bool Parser::TryAnnotateTypeOrScopeTokenAfterScopeSpec(
+@@ -2172,7 +2173,7 @@ bool Parser::TryAnnotateTypeOrScopeTokenAfterScopeSpec(
        return false;
      }
  
--    if (!getLangOpts().CPlusPlus && !getLangOpts().Mic) {
-+    if (!getLangOpts().CPlusPlus) {
+-    if (!getLangOpts().CPlusPlus) {
++    if (!getLangOpts().CPlusPlus && !getLangOpts().Mic) {
        // If we're in C, the only place we can have :: tokens is C23
        // attribute which is parsed elsewhere. If the identifier is not a type,
        // then it can't be scope either, just early exit.
-@@ -2243,9 +2242,9 @@ bool Parser::TryAnnotateTypeOrScopeTokenAfterScopeSpec(
+@@ -2242,9 +2243,9 @@ bool Parser::TryAnnotateTypeOrScopeTokenAfterScopeSpec(
  /// Note that this routine emits an error if you call it with ::new or ::delete
  /// as the current tokens, so only call it in contexts where these are invalid.
  bool Parser::TryAnnotateCXXScopeToken(bool EnteringContext) {
--  /*assert(getLangOpts().CPlusPlus &&
-+  assert(getLangOpts().CPlusPlus &&
+-  assert(getLangOpts().CPlusPlus &&
++  /*assert(getLangOpts().CPlusPlus &&
           "Call sites of this function should be guarded by checking for C++");
--  assert(MightBeCXXScopeToken() && "Cannot be a type or scope token!");*/
-+  assert(MightBeCXXScopeToken() && "Cannot be a type or scope token!");
+-  assert(MightBeCXXScopeToken() && "Cannot be a type or scope token!");
++  assert(MightBeCXXScopeToken() && "Cannot be a type or scope token!");*/
  
    CXXScopeSpec SS;
    if (ParseOptionalCXXScopeSpecifier(SS, /*ObjectType=*/nullptr,
 diff --git a/clang/lib/Sema/Sema.cpp b/clang/lib/Sema/Sema.cpp
-index 15408d1a3383..2e989f0ba6fe 100644
+index 2e989f0ba6fe..15408d1a3383 100644
 --- a/clang/lib/Sema/Sema.cpp
 +++ b/clang/lib/Sema/Sema.cpp
-@@ -340,8 +340,6 @@ void Sema::Initialize() {
+@@ -340,6 +340,8 @@ void Sema::Initialize() {
        PushOnScopeChains(Context.getUInt128Decl(), TUScope);
    }
  
--  if (getLangOpts().Mic)
--    PushOnScopeChains(Context.getRegionDecl(), TUScope);
++  if (getLangOpts().Mic)
++    PushOnScopeChains(Context.getRegionDecl(), TUScope);
  
    // Initialize predefined Objective-C types:
    if (getLangOpts().ObjC) {
 diff --git a/clang/lib/Sema/SemaCast.cpp b/clang/lib/Sema/SemaCast.cpp
-index 2970bde9db90..eca8363ee960 100644
+index eca8363ee960..2970bde9db90 100644
 --- a/clang/lib/Sema/SemaCast.cpp
 +++ b/clang/lib/Sema/SemaCast.cpp
 @@ -2716,7 +2716,7 @@ bool Sema::CheckAltivecInitFromScalar(SourceRange R, QualType VecTy,
  
  void CastOperation::CheckCXXCStyleCast(bool FunctionalStyle,
                                         bool ListInitialization) {
--  assert(Self.getLangOpts().CPlusPlus || Self.getLangOpts().Mic);
-+  assert(Self.getLangOpts().CPlusPlus);
+-  assert(Self.getLangOpts().CPlusPlus);
++  assert(Self.getLangOpts().CPlusPlus || Self.getLangOpts().Mic);
  
    // Handle placeholders.
    if (isPlaceholder()) {
@@ -483,207 +483,208 @@ index 2970bde9db90..eca8363ee960 100644
    Op.DestRange = CastTypeInfo->getTypeLoc().getSourceRange();
    Op.OpRange = SourceRange(LPLoc, CastExpr->getEndLoc());
  
--  if (getLangOpts().CPlusPlus || getLangOpts().Mic) {
-+  if (getLangOpts().CPlusPlus) {
+-  if (getLangOpts().CPlusPlus) {
++  if (getLangOpts().CPlusPlus || getLangOpts().Mic) {
      Op.CheckCXXCStyleCast(/*FunctionalCast=*/ false,
                            isa<InitListExpr>(CastExpr));
    } else {
 diff --git a/clang/lib/Sema/SemaDecl.cpp b/clang/lib/Sema/SemaDecl.cpp
-index e5204f8dec61..717ddb833958 100644
+index 717ddb833958..8fc99ce002a4 100644
 --- a/clang/lib/Sema/SemaDecl.cpp
 +++ b/clang/lib/Sema/SemaDecl.cpp
-@@ -792,8 +792,7 @@ void Sema::DiagnoseUnknownTypeName(IdentifierInfo *&II,
+@@ -792,7 +792,8 @@ void Sema::DiagnoseUnknownTypeName(IdentifierInfo *&II,
  /// Determine whether the given result set contains either a type name
  /// or
  static bool isResultTypeOrTemplate(LookupResult &R, const Token &NextToken) {
--  bool CheckTemplate = (R.getSema().getLangOpts().CPlusPlus ||
--                         R.getSema().getLangOpts().Mic) &&
-+  bool CheckTemplate = R.getSema().getLangOpts().CPlusPlus &&
+-  bool CheckTemplate = R.getSema().getLangOpts().CPlusPlus &&
++  bool CheckTemplate = (R.getSema().getLangOpts().CPlusPlus ||
++                         R.getSema().getLangOpts().Mic) &&
                         NextToken.is(tok::less);
  
    for (LookupResult::iterator I = R.begin(), IEnd = R.end(); I != IEnd; ++I) {
-@@ -970,7 +969,7 @@ Corrected:
+@@ -969,7 +970,7 @@ Corrected:
  
          NamedDecl *FirstDecl = Corrected.getFoundDecl();
          NamedDecl *UnderlyingFirstDecl = Corrected.getCorrectionDecl();
--        if ((getLangOpts().CPlusPlus || getLangOpts().Mic) && NextToken.is(tok::less) &&
-+        if (getLangOpts().CPlusPlus && NextToken.is(tok::less) &&
+-        if (getLangOpts().CPlusPlus && NextToken.is(tok::less) &&
++        if ((getLangOpts().CPlusPlus || getLangOpts().Mic) && NextToken.is(tok::less) &&
              UnderlyingFirstDecl && isa<TemplateDecl>(UnderlyingFirstDecl)) {
            UnqualifiedDiag = diag::err_no_template_suggest;
            QualifiedDiag = diag::err_no_member_template_suggest;
-@@ -1052,7 +1051,7 @@ Corrected:
+@@ -1051,7 +1052,7 @@ Corrected:
      break;
  
    case LookupResult::Ambiguous:
--    if ((getLangOpts().CPlusPlus || getLangOpts().Mic) && NextToken.is(tok::less) &&
-+    if (getLangOpts().CPlusPlus && NextToken.is(tok::less) &&
+-    if (getLangOpts().CPlusPlus && NextToken.is(tok::less) &&
++    if ((getLangOpts().CPlusPlus || getLangOpts().Mic) && NextToken.is(tok::less) &&
          hasAnyAcceptableTemplateNames(Result, /*AllowFunctionTemplates=*/true,
                                        /*AllowDependent=*/false)) {
        // C++ [temp.local]p3:
-@@ -1077,7 +1076,7 @@ Corrected:
+@@ -1076,7 +1077,7 @@ Corrected:
      return NameClassification::Error();
    }
  
--  if ((getLangOpts().CPlusPlus || getLangOpts().Mic) && NextToken.is(tok::less) &&
-+  if (getLangOpts().CPlusPlus && NextToken.is(tok::less) &&
+-  if (getLangOpts().CPlusPlus && NextToken.is(tok::less) &&
++  if ((getLangOpts().CPlusPlus || getLangOpts().Mic) && NextToken.is(tok::less) &&
        (IsFilteredTemplateName ||
         hasAnyAcceptableTemplateNames(
             Result, /*AllowFunctionTemplates=*/true,
-@@ -8526,7 +8525,7 @@ void Sema::CheckVariableDeclarationType(VarDecl *NewVD) {
+@@ -8525,7 +8526,7 @@ void Sema::CheckVariableDeclarationType(VarDecl *NewVD) {
    // This includes arrays of objects with address space qualifiers, but not
    // automatic variables that point to other address spaces.
    // ISO/IEC TR 18037 S5.1.2
--  if ((!getLangOpts().Mic && !getLangOpts().OpenCL) && NewVD->hasLocalStorage() &&
-+  if (!getLangOpts().OpenCL && NewVD->hasLocalStorage() &&
+-  if (!getLangOpts().OpenCL && NewVD->hasLocalStorage() &&
++  if ((!getLangOpts().Mic && !getLangOpts().OpenCL) && NewVD->hasLocalStorage() &&
        T.getAddressSpace() != LangAS::Default) {
      Diag(NewVD->getLocation(), diag::err_as_qualified_auto_decl) << 0;
      NewVD->setInvalidDecl();
-@@ -8624,10 +8623,10 @@ void Sema::CheckVariableDeclarationType(VarDecl *NewVD) {
+@@ -8623,10 +8624,10 @@ void Sema::CheckVariableDeclarationType(VarDecl *NewVD) {
              return;
            }
          }
--      } else if (!getLangOpts().Mic && (T.getAddressSpace() != LangAS::opencl_private &&
-+      } else if (T.getAddressSpace() != LangAS::opencl_private &&
+-      } else if (T.getAddressSpace() != LangAS::opencl_private &&
++      } else if (!getLangOpts().Mic && (T.getAddressSpace() != LangAS::opencl_private &&
                   // If we are parsing a template we didn't deduce an addr
                   // space yet.
--                 T.getAddressSpace() != LangAS::Default)) {
-+                 T.getAddressSpace() != LangAS::Default) {
+-                 T.getAddressSpace() != LangAS::Default) {
++                 T.getAddressSpace() != LangAS::Default)) {
          // Do not allow other address spaces on automatic variable.
          Diag(NewVD->getLocation(), diag::err_as_qualified_auto_decl) << 1;
          NewVD->setInvalidDecl();
-@@ -9156,7 +9155,7 @@ static FunctionDecl *CreateNewFunctionDecl(Sema &SemaRef, Declarator &D,
+@@ -9155,7 +9156,7 @@ static FunctionDecl *CreateNewFunctionDecl(Sema &SemaRef, Declarator &D,
      D.getMutableDeclSpec().ClearConstexprSpec();
    }
  
--  if (!SemaRef.getLangOpts().CPlusPlus && !SemaRef.getLangOpts().Mic) {
-+  if (!SemaRef.getLangOpts().CPlusPlus) {
+-  if (!SemaRef.getLangOpts().CPlusPlus) {
++  if (!SemaRef.getLangOpts().CPlusPlus && !SemaRef.getLangOpts().Mic) {
      // Determine whether the function was written with a prototype. This is
      // true when:
      //   - there is a prototype in the declarator, or
-@@ -9726,7 +9725,7 @@ Sema::ActOnFunctionDeclarator(Scope *S, Declarator &D, DeclContext *DC,
+@@ -9725,7 +9726,7 @@ Sema::ActOnFunctionDeclarator(Scope *S, Declarator &D, DeclContext *DC,
    if (IsLocalExternDecl)
      NewFD->setLocalExternDecl();
  
--  if (getLangOpts().CPlusPlus || getLangOpts().Mic) {
-+  if (getLangOpts().CPlusPlus) {
+-  if (getLangOpts().CPlusPlus) {
++  if (getLangOpts().CPlusPlus || getLangOpts().Mic) {
      // The rules for implicit inlines changed in C++20 for methods and friends
      // with an in-class definition (when such a definition is not attached to
      // the global module).  User-specified 'inline' overrides this (set when
-@@ -10176,7 +10175,7 @@ Sema::ActOnFunctionDeclarator(Scope *S, Declarator &D, DeclContext *DC,
+@@ -10175,7 +10176,7 @@ Sema::ActOnFunctionDeclarator(Scope *S, Declarator &D, DeclContext *DC,
        }
      }
  
--    if (!getLangOpts().CPlusPlus && !getLangOpts().Mic) {
-+    if (!getLangOpts().CPlusPlus) {
+-    if (!getLangOpts().CPlusPlus) {
++    if (!getLangOpts().CPlusPlus && !getLangOpts().Mic) {
        // In C, find all the tag declarations from the prototype and move them
        // into the function DeclContext. Remove them from the surrounding tag
        // injection context of the function, which is typically but not always
-@@ -10306,7 +10305,7 @@ Sema::ActOnFunctionDeclarator(Scope *S, Declarator &D, DeclContext *DC,
+@@ -10305,7 +10306,7 @@ Sema::ActOnFunctionDeclarator(Scope *S, Declarator &D, DeclContext *DC,
      }
    }
  
--  if (!getLangOpts().CPlusPlus && !getLangOpts().Mic) {
-+  if (!getLangOpts().CPlusPlus) {
+-  if (!getLangOpts().CPlusPlus) {
++  if (!getLangOpts().CPlusPlus && !getLangOpts().Mic) {
      // Perform semantic checking on the function declaration.
      if (!NewFD->isInvalidDecl() && NewFD->isMain())
        CheckMain(NewFD, D.getDeclSpec());
-@@ -10756,7 +10755,7 @@ Sema::ActOnFunctionDeclarator(Scope *S, Declarator &D, DeclContext *DC,
+@@ -10755,7 +10756,7 @@ Sema::ActOnFunctionDeclarator(Scope *S, Declarator &D, DeclContext *DC,
      }
    }
  
--  if (getLangOpts().CPlusPlus || getLangOpts().Mic) {
-+  if (getLangOpts().CPlusPlus) {
+-  if (getLangOpts().CPlusPlus) {
++  if (getLangOpts().CPlusPlus || getLangOpts().Mic) {
      // Precalculate whether this is a friend function template with a constraint
      // that depends on an enclosing template, per [temp.friend]p9.
      if (isFriend && FunctionTemplate &&
-@@ -13905,24 +13904,6 @@ void Sema::ActOnUninitializedDecl(Decl *RealDecl) {
+@@ -13902,6 +13903,25 @@ void Sema::ActOnUninitializedDecl(Decl *RealDecl) {
+ 
+     switch (DefKind) {
      case VarDecl::Definition:
++    if (getLangOpts().Mic) {
++      for (auto *Typedef = Var->getType().getTypePtr()->getAs<TypedefType>();
++           Typedef; Typedef = Typedef->getDecl()
++                                ->getUnderlyingType()
++                                .getTypePtr()
++                                ->getAs<TypedefType>()) {
++        if (Typedef->getDecl() == Context.getRegionDecl()) {
++          unsigned depth = CurScope->getDepth();
++          unsigned IntSize = Context.getTargetInfo().getIntWidth();
++          ExprResult Res =
++              IntegerLiteral::Create(Context, llvm::APInt(IntSize, depth),
++                                     Context.UnsignedIntTy, Var->getLocation());
++          Var->setInit(Res.get());
++          Var->setConstexpr(true);
++          break;
++        }
++      }
++    }
++    
        if (!Var->isStaticDataMember() || !Var->getAnyInitializer())
          break;
--      if (getLangOpts().Mic) {
--        for (auto *Typedef = Var->getType().getTypePtr()->getAs<TypedefType>();
--             Typedef; Typedef = Typedef->getDecl()
--                                  ->getUnderlyingType()
--                                  .getTypePtr()
--                                  ->getAs<TypedefType>()) {
--          if (Typedef->getDecl() == Context.getRegionDecl()) {
--            unsigned depth = CurScope->getDepth();
--            unsigned IntSize = Context.getTargetInfo().getIntWidth();
--            ExprResult Res =
--                IntegerLiteral::Create(Context, llvm::APInt(IntSize, depth),
--                                       Context.UnsignedIntTy, Var->getLocation());
--            Var->setInit(Res.get());
--            Var->setConstexpr(true);
--            break;
--          }
--        }
--      }
  
-       // We have an out-of-line definition of a static data member
-       // that has an in-class initializer, so we type-check this like
-@@ -18079,8 +18060,6 @@ void Sema::ActOnTagFinishDefinition(Scope *S, Decl *TagD,
+@@ -18060,6 +18080,8 @@ void Sema::ActOnTagFinishDefinition(Scope *S, Decl *TagD,
    }
  
    if (auto *RD = dyn_cast<CXXRecordDecl>(Tag)) {
--    if (getLangOpts().Mic)
--      goto out;
++    if (getLangOpts().Mic)
++      goto out;
      FieldCollector->FinishClass();
      if (RD->hasAttr<SYCLSpecialClassAttr>()) {
        auto *Def = RD->getDefinition();
-@@ -18106,8 +18085,6 @@ void Sema::ActOnTagFinishDefinition(Scope *S, Decl *TagD,
+@@ -18085,6 +18107,8 @@ void Sema::ActOnTagFinishDefinition(Scope *S, Decl *TagD,
        MarkVTableUsed(RD->getLocation(), RD, /*DefinitionRequired=*/true);
    }
  
--  out:
--  
++  out:
++  
    // Exit this scope of this tag's definition.
    PopDeclContext();
  
 diff --git a/clang/lib/Sema/SemaExpr.cpp b/clang/lib/Sema/SemaExpr.cpp
-index 376cf529c82b..687b1be94592 100644
+index 687b1be94592..376cf529c82b 100644
 --- a/clang/lib/Sema/SemaExpr.cpp
 +++ b/clang/lib/Sema/SemaExpr.cpp
 @@ -6416,7 +6416,7 @@ ExprResult Sema::BuildCallExpr(Scope *Scope, Expr *Fn, SourceLocation LParenLoc,
    if (CheckArgsForPlaceholders(ArgExprs))
      return ExprError();
  
--  if (getLangOpts().CPlusPlus || getLangOpts().Mic) {
-+  if (getLangOpts().CPlusPlus) {
+-  if (getLangOpts().CPlusPlus) {
++  if (getLangOpts().CPlusPlus || getLangOpts().Mic) {
      // If this is a pseudo-destructor expression, build the call immediately.
      if (isa<CXXPseudoDestructorExpr>(Fn)) {
        if (!ArgExprs.empty()) {
-@@ -16696,8 +16696,6 @@ bool Sema::DiagnoseAssignmentResult(AssignConvertType ConvTy,
+@@ -16696,6 +16696,8 @@ bool Sema::DiagnoseAssignmentResult(AssignConvertType ConvTy,
      Qualifiers lhq = SrcType->getPointeeType().getQualifiers();
      Qualifiers rhq = DstType->getPointeeType().getQualifiers();
      if (lhq.getAddressSpace() != rhq.getAddressSpace()) {
--      if (getLangOpts().Mic)
--        return false;
++      if (getLangOpts().Mic)
++        return false;
        DiagKind = diag::err_typecheck_incompatible_address_space;
        break;
      } else if (lhq.getObjCLifetime() != rhq.getObjCLifetime()) {
 diff --git a/clang/lib/Sema/SemaTemplate.cpp b/clang/lib/Sema/SemaTemplate.cpp
-index 0de15ec5f24c..ca71542d886f 100644
+index ca71542d886f..0de15ec5f24c 100644
 --- a/clang/lib/Sema/SemaTemplate.cpp
 +++ b/clang/lib/Sema/SemaTemplate.cpp
 @@ -183,7 +183,7 @@ TemplateNameKind Sema::isTemplateName(Scope *S,
                                        TemplateTy &TemplateResult,
                                        bool &MemberOfUnknownSpecialization,
                                        bool Disambiguation) {
--  assert((getLangOpts().CPlusPlus || getLangOpts().Mic) && "No template names in C!");
-+  assert(getLangOpts().CPlusPlus && "No template names in C!");
+-  assert(getLangOpts().CPlusPlus && "No template names in C!");
++  assert((getLangOpts().CPlusPlus || getLangOpts().Mic) && "No template names in C!");
  
    DeclarationName TName;
    MemberOfUnknownSpecialization = false;
 diff --git a/clang/lib/Sema/SemaType.cpp b/clang/lib/Sema/SemaType.cpp
-index 120147c82526..6fa39cdccef2 100644
+index 6fa39cdccef2..120147c82526 100644
 --- a/clang/lib/Sema/SemaType.cpp
 +++ b/clang/lib/Sema/SemaType.cpp
 @@ -5409,7 +5409,7 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
  
    assert(!T.isNull() && "T must not be null after this point");
  
--  if ((LangOpts.CPlusPlus || LangOpts.Mic) && T->isFunctionType()) {
-+  if (LangOpts.CPlusPlus && T->isFunctionType()) {
+-  if (LangOpts.CPlusPlus && T->isFunctionType()) {
++  if ((LangOpts.CPlusPlus || LangOpts.Mic) && T->isFunctionType()) {
      const FunctionProtoType *FnTy = T->getAs<FunctionProtoType>();
      assert(FnTy && "Why oh why is there not a FunctionProtoType here?");
  
@@ -691,8 +692,8 @@ index 120147c82526..6fa39cdccef2 100644
  
    // ISO/IEC TR 18037 S5.3 (amending C99 6.7.3): "A function type shall not be
    // qualified by an address-space qualifier."
--  if (!S.LangOpts.Mic && Type->isFunctionType()) {
-+  if (Type->isFunctionType()) {
+-  if (Type->isFunctionType()) {
++  if (!S.LangOpts.Mic && Type->isFunctionType()) {
      S.Diag(Attr.getLoc(), diag::err_attribute_address_function_type);
      Attr.setInvalid();
      return;
