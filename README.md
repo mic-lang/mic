@@ -26,5 +26,5 @@ make -j4
 Try it out
 
 ```
-llvm-project/build/bin/clang -std=mic main.c /usr/local/lib/libmimalloc.so
+bin/clang -std=mic main.c /usr/local/lib/libmimalloc.so
 ```
