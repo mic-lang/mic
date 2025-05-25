@@ -8,7 +8,7 @@ The Mic documentation is available at the
 ## Trying out Mic
 
 The binaries are available at 
-https://github.com/mic-lang/clang/releases/tag/mic-19.1.7 .
+https://github.com/mic-lang/clang/releases/tag/mic-19.1.7
 
 You can build the Mic compiler with the following steps.
 
