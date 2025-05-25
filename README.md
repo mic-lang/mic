@@ -10,7 +10,7 @@ The Mic documentation is available at the
 The binaries are available at 
 https://github.com/mic-lang/clang/releases/tag/mic-19.1.7
 
-You can build the Mic compiler with the following steps.
+You can build the Mic llvm/clang compiler with the following steps.
 
 ```
 git clone https://github.com/llvm/llvm-project 
