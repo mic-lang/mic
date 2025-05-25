@@ -7,7 +7,9 @@ The Mic documentation is available at the
 
 ## Trying out Mic
 
-You can install the Mic compiler with the following steps.
+[The binary is here.](https://github.com/mic-lang/clang/releases/tag/mic-19.1.7)
+
+You can build the Mic compiler with the following steps.
 
 ```
 git clone https://github.com/llvm/llvm-project 
